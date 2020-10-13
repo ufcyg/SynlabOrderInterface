@@ -1,0 +1,24 @@
+{
+  "name": "synlab/order-interface",
+  "description": "Interface orders with Rieck",
+  "version": "v0.0.1",
+  "type": "shopware-platform-plugin",
+  "license": "proprietary",
+  "authors": [
+    {
+        "name": "SYNLAB A&S Germany"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "SynlabOrderInterface\\": "src/"
+    }
+  },
+  "extra": {
+    "shopware-plugin-class": "SynlabOrderInterface\\SynlabOrderInterface",
+    "label": {
+      "de-DE": "OrderInterface",
+      "en-GB": "OrderInterface"
+    }
+  }
+}

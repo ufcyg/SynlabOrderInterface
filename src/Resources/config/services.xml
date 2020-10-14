@@ -5,6 +5,15 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
+        <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController" public="true">
+            <argument id="order.repository" type="service" />
+            <argument id="order_address.repository" type="service" />
+            <argument id="order_line_item.repository" type="service" />
+            
 
+            <call method="setContainer">
+                <argument type="service" id="service_container" />
+            </call>
+        </service>
     </services>
 </container>

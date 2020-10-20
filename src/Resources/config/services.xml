@@ -9,6 +9,7 @@
             <argument id="order.repository" type="service" />
             <argument id="order_address.repository" type="service" />
             <argument id="order_line_item.repository" type="service" />
+            <argument id="product.repository" type="service" />
             
 
             <call method="setContainer">

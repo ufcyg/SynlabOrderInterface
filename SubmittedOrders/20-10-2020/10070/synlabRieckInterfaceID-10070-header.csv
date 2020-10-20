@@ -1,0 +1,38 @@
+Nr.;Feldname;Wert
+1;Kennung;synlabRieckInterfaceID
+2;Auftragsnummer Kunde;10070
+3;Bereitstelldatum;
+4;Bereitstelluhrzeit;
+5;Referenz 1;
+6;Referenz 2;
+7;Referenz 3;
+8;Name 1, Kunde;Gustava
+9;Name 2, Kunde;Fringe
+10;Name 3, Kunde;
+11;Straße, Kunde;Pollostreet 47
+12;PLZ, Kunde;04317
+13;Ort, Kunde;Leipzsch
+14;Land, Kunde;DE
+15;Name 1, Lieferanschrift;test
+16;Name 2, Lieferanschrift;boi
+17;Name 3, Lieferanschrift;
+18;Straße, Lieferanschrift;testboistreet 1
+19;PLZ, Lieferanschrift;04317
+20;Ort, Lieferanschrift;L
+21;Land, Lieferanschrift;DE
+22;Mailadresse, Lieferanschrift;p.thimm@web.de
+23;Telefon, Lieferanschrift;
+24;Fixtermindatum;
+25;Fixterminuhrzeit;
+26;Speditionshinweis 1;
+27;Speditionshinweis 1, Zusatzhinweis;
+28;Speditionshinweis 2;
+29;Speditionshinweis 2, Zusatzhinweis;
+30;Frankatur;
+31;Frankatur, Zusatzinformation;
+32;Warenwert;2093.94
+33;Versandart LFS;
+34;Servicecode LFS;
+35;Tour LFS;
+36;Schnittstelle LFS;1
+37;Priorität;02

@@ -11,7 +11,6 @@
             <argument id="order_line_item.repository" type="service" />
             <argument id="product.repository" type="service" />
             
-
             <call method="setContainer">
                 <argument type="service" id="service_container" />
             </call>
@@ -24,6 +23,11 @@
 
         <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderTransferTaskHandler">
             <argument type="service" id="scheduled_task.repository" />
+            <argument id="order.repository" type="service" />
+            <argument id="order_address.repository" type="service" />
+            <argument id="order_line_item.repository" type="service" />
+            <argument id="product.repository" type="service" />
+
             <tag name="messenger.message_handler" />
         </service>
     </services>

@@ -13,6 +13,6 @@ class ScheduledOrderTransferTask extends ScheduledTask
 
     public static function getDefaultInterval(): int
     {
-        return 10; // daily
+        return 86400; // daily
     }
 }

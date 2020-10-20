@@ -10,33 +10,40 @@ use SynlabOrderInterface\Core\Api\OrderInterfaceController;
 
 class ScheduledOrderTransferTaskHandler extends ScheduledTaskHandler
 {
-
-    public function __construct(EntityRepositoryInterface $scheduledTaskRepository)
+    /** @var EntityRepositoryInterface $productRepository */
+    private $productRepository;
+    /** @var EntityRepositoryInterface $orderRepository */
+    private $orderRepository;
+    /** @var EntityRepositoryInterface $orderDeliveryAddressRepository */                              
+    private $orderDeliveryAddressRepository;
+    /** @var EntityRepositoryInterface $lineItemsRepository */
+    private $lineItemsRepository;
+    /** @var EntityRepositoryInterface $productsRepository */                                
+    private $productsRepository;
+    
+    public function __construct(EntityRepositoryInterface $scheduledTaskRepository,
+                                EntityRepositoryInterface $orderRepository,
+                                EntityRepositoryInterface $orderDeliveryAddressRepository,
+                                EntityRepositoryInterface $lineItemsRepository,
+                                EntityRepositoryInterface $productsRepository)
     {
+        $this->orderRepository = $orderRepository;
+        $this->orderDeliveryAddressRepository = $orderDeliveryAddressRepository;
+        $this->lineItemsRepository = $lineItemsRepository;
+        $this->productsRepository = $productsRepository;
         parent::__construct($scheduledTaskRepository);
     }
 
     public static function getHandledMessages(): iterable
     {
-        return [ ScheduledOrderTransferTaskHandler::class ];
+        return [ ScheduledOrderTransferTask::class ];
     }
 
     public function run(): void
     {
         $this->tester();
-        // /** @var EntityRepositoryInterface $productRepository */
-        // $productRepository = $this->container->get('product.repository');
-        // /** @var EntityRepositoryInterface $orderRepository */
-        // $orderRepository = $this->container->get('product.repository');
-        // /** @var EntityRepositoryInterface $orderDeliveryAddressRepository */                              
-        // $orderDeliveryAddressRepository = $this->container->get('product.repository');
-        // /** @var EntityRepositoryInterface $lineItemsRepository */
-        // $lineItemsRepository = $this->container->get('product.repository');
-        // /** @var EntityRepositoryInterface $productsRepository */                                
-        // $productsRepository = $this->container->get('product.repository');
-        
-        // $interfaceController = new OrderInterfaceController($orderRepository, $orderDeliveryAddressRepository, $lineItemsRepository, $productsRepository);
-        // $interfaceController->writeOrders(Context::createDefaultContext());
+        $interfaceController = new OrderInterfaceController($this->orderRepository, $this->orderDeliveryAddressRepository, $this->lineItemsRepository, $this->productsRepository);
+        $interfaceController->writeOrders(Context::createDefaultContext());
     }
 
     private function tester()

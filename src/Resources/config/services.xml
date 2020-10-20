@@ -16,5 +16,15 @@
                 <argument type="service" id="service_container" />
             </call>
         </service>
+
+
+        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderTransferTask">
+            <tag name="shopware.scheduled.task" />
+        </service>
+
+        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderTransferTaskHandler">
+            <argument type="service" id="scheduled_task.repository" />
+            <tag name="messenger.message_handler" />
+        </service>
     </services>
 </container>

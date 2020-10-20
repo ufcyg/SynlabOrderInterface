@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/master/src/Core/System/SystemConfig/Schema/config.xsd">
+    
+    <card>
+        <title>Connection Info</title>
+        <input-field>
+            <name>ipAdress</name>
+            <label>Remote FTP-Server Address</label>
+            <label lang="de-DE">Adresse des entfernten FTP-Servers</label>          
+            <placeholder>0.0.0.0</placeholder>
+            <placeholder lang="de-DE">0.0.0.0</placeholder>
+            <helpText>Input a valid ip address without port</helpText>
+            <helpText lang="de-DE">Geben Sie eine valide IP-Adresse ohne Port ein.</helpText>
+        </input-field>
+
+        <input-field>
+            <name>port</name>
+            <label>Port to use for connection</label>
+            <label lang="de-DE">Port für die Verbindung</label>          
+            <placeholder>21</placeholder>
+            <placeholder lang="de-DE">21</placeholder>
+            <helpText>Input the used port, if left empty default (21) is used.</helpText>
+            <helpText lang="de-DE">Geben Sie den zu verwendenden Port ein, falls frei wird der Standard (21) Port verwendet.</helpText>
+        </input-field>
+
+        <input-field type="password">
+            <name>logisticsCustomerID</name>
+            <label>LogisticsCustomerID</label>
+            <label lang="de-DE">KundenkennungLogistik</label>          
+            <placeholder>LogisticsCustomerID</placeholder>
+            <placeholder lang="de-DE">KundenkennungLogistik</placeholder>
+            <helpText>Input your customer ID at the corresponding logistics company.</helpText>
+            <helpText lang="de-DE">Geben Sie ihre Kundennummer beim Logistikpartner ein.</helpText>
+        </input-field>
+
+        <input-field>
+            <name>ftpUserName</name>
+            <label>FTP username</label>
+            <label lang="de-DE">FTP Benutzername</label>          
+            <placeholder>username</placeholder>
+            <placeholder lang="de-DE">Benutzername</placeholder>
+            <helpText>Input your username for target FTP-Server</helpText>
+            <helpText lang="de-DE">Geben Sie den Nutzernamen für den Ziel FTP-Server ein.</helpText>
+        </input-field>
+
+        <input-field type="password">
+            <name>ftpPassword</name>
+            <label>FTP Password</label>
+            <label lang="de-DE">FTP Passwort</label>          
+            <placeholder>password</placeholder>
+            <placeholder lang="de-DE">Passwort</placeholder>
+            <helpText>Input the matching password for given username.</helpText>
+            <helpText lang="de-DE">Geben Sie das dem Nutzernamen entsprechende Passwort ein.</helpText>
+        </input-field>
+    </card>
+</config>

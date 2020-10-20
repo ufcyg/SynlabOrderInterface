@@ -62,11 +62,11 @@ class OrderInterfaceController extends AbstractController
     }
 
     /**
-     * @Route("/api/v{version}/_action/synlab-order-interface/chill", name="api.custom.synlab_order_interface.chill", methods={"POST"})
+     * @Route("/api/v{version}/_action/synlab-order-interface/writeOrders", name="api.custom.synlab_order_interface.chill", methods={"POST"})
      * @param Context $context;
      * @return Response
      */
-    public function chill(Context $context): Response
+    public function writeOrders(Context $context): Response
     {
         $this->writeFile($context);
 

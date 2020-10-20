@@ -8,14 +8,17 @@ use Shopware\Core\Framework\Plugin\Context\UpdateContext;
 use Shopware\Core\Framework\Plugin\Context\ActivateContext;
 use Shopware\Core\Framework\Plugin\Context\DeactivateContext;
 use Shopware\Core\Framework\Plugin;
-use Doctrine\DBAL\Connection;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 class SynlabOrderInterface extends Plugin
 {
     /** @inheritDoc */
     public function install(InstallContext $installContext): void
     {
-        mkdir('../custom/plugins/SynlabOrderInterface/SubmittedOrders');
+        if (!file_exists('../custom/plugins/SynlabOrderInterface/SubmittedOrders')) {
+            mkdir('../custom/plugins/SynlabOrderInterface/SubmittedOrders', 0777, true);
+        }
     }
 
     public function postInstall(InstallContext $installContext): void
@@ -48,5 +51,22 @@ class SynlabOrderInterface extends Plugin
         }
 
         // Remove all traces of your plugin
+        $dir = '../custom/plugins/SynlabOrderInterface/SubmittedOrders';
+        $it = new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS);
+        $files = new RecursiveIteratorIterator($it,
+             RecursiveIteratorIterator::CHILD_FIRST);
+        foreach($files as $file) 
+        {
+            if ($file->isDir())
+            {
+                rmdir($file->getRealPath());
+            }
+            else 
+            {
+                unlink($file->getRealPath());
+            }
+        }
+        rmdir($dir);
+        parent::uninstall($context);
     }
 }

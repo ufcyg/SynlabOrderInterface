@@ -5,7 +5,7 @@
     <card>
         <title>Connection Info</title>
         <input-field>
-            <name>ipAdress</name>
+            <name>ipAddress</name>
             <label>Remote FTP-Server Address</label>
             <label lang="de-DE">Adresse des entfernten FTP-Servers</label>          
             <placeholder>0.0.0.0</placeholder>

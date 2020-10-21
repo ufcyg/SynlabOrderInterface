@@ -6,6 +6,8 @@
 
     <services>
         <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController" public="true">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
+
             <argument id="order.repository" type="service" />
             <argument id="order_address.repository" type="service" />
             <argument id="order_line_item.repository" type="service" />
@@ -14,6 +16,9 @@
             <call method="setContainer">
                 <argument type="service" id="service_container" />
             </call>
+
+            
+
         </service>
 
 
@@ -22,6 +27,8 @@
         </service>
 
         <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderTransferTaskHandler">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
+
             <argument type="service" id="scheduled_task.repository" />
             <argument id="order.repository" type="service" />
             <argument id="order_address.repository" type="service" />
@@ -30,5 +37,11 @@
 
             <tag name="messenger.message_handler" />
         </service>
+
+
+        <!-- <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
+            <tag name="kernel.event_subscriber"/>
+        </service> -->
     </services>
 </container>

@@ -5,7 +5,9 @@ namespace SynlabOrderInterface\ScheduledTask;
 use DateTime;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTaskHandler;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SynlabOrderInterface\Core\Api\OrderInterfaceController;
 
 class ScheduledOrderTransferTaskHandler extends ScheduledTaskHandler
@@ -20,13 +22,16 @@ class ScheduledOrderTransferTaskHandler extends ScheduledTaskHandler
     private $lineItemsRepository;
     /** @var EntityRepositoryInterface $productsRepository */                                
     private $productsRepository;
-    
-    public function __construct(EntityRepositoryInterface $scheduledTaskRepository,
+    /** @var SystemConfigService $systemConfigService */
+    private $systemConfigService;
+    public function __construct(SystemConfigService $systemConfigService,
+                                EntityRepositoryInterface $scheduledTaskRepository,
                                 EntityRepositoryInterface $orderRepository,
                                 EntityRepositoryInterface $orderDeliveryAddressRepository,
                                 EntityRepositoryInterface $lineItemsRepository,
                                 EntityRepositoryInterface $productsRepository)
     {
+        $this->systemConfigService = $systemConfigService;
         $this->orderRepository = $orderRepository;
         $this->orderDeliveryAddressRepository = $orderDeliveryAddressRepository;
         $this->lineItemsRepository = $lineItemsRepository;
@@ -41,18 +46,10 @@ class ScheduledOrderTransferTaskHandler extends ScheduledTaskHandler
 
     public function run(): void
     {
-        // $this->tester();
-        $interfaceController = new OrderInterfaceController($this->orderRepository, $this->orderDeliveryAddressRepository, $this->lineItemsRepository, $this->productsRepository);
+        $interfaceController = new OrderInterfaceController($this->systemConfigService, $this->orderRepository, $this->orderDeliveryAddressRepository, $this->lineItemsRepository, $this->productsRepository);
+        if($interfaceController->newOrdersCk())
         $interfaceController->writeOrders(Context::createDefaultContext());
     }
 
-    private function tester()
-    {
-        $timeStamp = new DateTime();
-        $timeStamp = $timeStamp->format('d-m-Y');
-        $this->todaysFolderPath = '../custom/plugins/SynlabOrderInterface/SubmittedOrders/' . $timeStamp;
-        if (!file_exists($this->todaysFolderPath)) {
-            mkdir($this->todaysFolderPath, 0777, true);
-        }
-    }
+    
 }

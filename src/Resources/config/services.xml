@@ -28,13 +28,15 @@
         </service>
 
         <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderTransferTaskHandler">
-            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
+            <!-- <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" /> -->
 
             <argument type="service" id="scheduled_task.repository" />
-            <argument id="order.repository" type="service" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
+            
+            <!-- <argument id="order.repository" type="service" />
             <argument id="order_address.repository" type="service" />
             <argument id="order_line_item.repository" type="service" />
-            <argument id="product.repository" type="service" />
+            <argument id="product.repository" type="service" /> -->
 
             <tag name="messenger.message_handler" />
         </service>

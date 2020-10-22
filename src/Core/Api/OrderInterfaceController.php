@@ -19,8 +19,6 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\RangeFilter;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 
-
-use GuzzleHttp\Client;
 use Shopware\Core\Checkout\Order\Aggregate\OrderDelivery\OrderDeliveryEntity;
 use Shopware\Core\Checkout\Order\SalesChannel\OrderService;
 use Symfony\Component\HttpFoundation\ParameterBag;
@@ -117,10 +115,7 @@ class OrderInterfaceController extends AbstractController
 
         foreach ($products as $product)
         {
-            $productData = array(
-                'Artikelnummer' => ''
-            );
-            $articleBase = $this->csvFactory->generateArticlebase($productData);
+            $articleBase = $this->csvFactory->generateArticlebase();
             file_put_contents($this->todaysFolderPath . '/' . $this->companyID . '-' . 'synlabArticlebase.csv', $articleBase);
         }
         return new Response('',Response::HTTP_NO_CONTENT);
@@ -135,14 +130,166 @@ class OrderInterfaceController extends AbstractController
         return $this->productsRepository->search($criteria, Context::createDefaultContext());
     }
 
-    
-
-    private function writeFile(Context $context)
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/reopenOrders", name="api.custom.synlab_order_interface.reopenOrders", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function reopenOrders(Context $context)
     {
-        $criteria = $this->addCriteriaFilterDate(new Criteria());
+        /** @var EntitySearchResult $entities */
+        $entities = $this->getOrderEntities($context, false);
+
+        if(count($entities) === 0){
+            return;
+        }
+        /** @var OrderEntity $order */
+        foreach ($entities as $orderID => $order) 
+        {
+            if($this->orderStateIsReopenable($order))
+            {
+                $this->updateOrderStatus($orderID, 'reopen');
+            }
+        }
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/processOrders", name="api.custom.synlab_order_interface.processOrders", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function processOrders(Context $context)
+    {
+        /** @var EntitySearchResult $entities */
+        $entities = $this->getOrderEntities($context, false);
+
+        if(count($entities) === 0){
+            return;
+        }
+        /** @var OrderEntity $order */
+        foreach ($entities as $orderID => $order) 
+        {
+            if($this->orderStateIsProcessable($order))
+            {
+                $this->updateOrderStatus($orderID, 'process');
+            }
+        }
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/completeOrders", name="api.custom.synlab_order_interface.completeOrders", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function completeOrders(Context $context)
+    {
+        /** @var EntitySearchResult $entities */
+        $entities = $this->getOrderEntities($context, false);
+
+        if(count($entities) === 0){
+            return;
+        }
+        /** @var OrderEntity $order */
+        foreach ($entities as $orderID => $order) 
+        {
+            if($this->orderStateIsCompletable($order))
+            {
+                $this->updateOrderStatus($orderID, 'complete');
+            }
+        }
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/cancelOrders", name="api.custom.synlab_order_interface.cancelOrders", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function cancelOrders(Context $context)
+    {
+        /** @var EntitySearchResult $entities */
+        $entities = $this->getOrderEntities($context, false);
+
+        if(count($entities) === 0){
+            return;
+        }
+        /** @var OrderEntity $order */
+        foreach ($entities as $orderID => $order) 
+        {
+            if($this->orderStateIsCancelable($order))
+            {
+                $this->updateOrderStatus($orderID, 'cancel');
+            }
+        }
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+
+    //process, complete, cancel, reopen
+    private function orderStateIsReopenable(OrderEntity $order): bool
+    {
+        $stateName = $order->getStateMachineState()->getName();
+        switch ($stateName) {
+            case 'Open':
+                return false;
+            case 'In progress':
+                return false;
+        }
+        return true;
+    }
+    private function orderStateIsProcessable(OrderEntity $order): bool
+    {
+        $stateName = $order->getStateMachineState()->getName();
+        switch ($stateName) {
+            case 'In progress':
+                return false;
+            case 'Done':
+                return false;
+            case 'Cancelled':
+                return false;
+        }
+        return true;
+    }
+    private function orderStateIsCompletable(OrderEntity $order): bool
+    {
+        $stateName = $order->getStateMachineState()->getName();
+        switch ($stateName) {
+            case 'Open':
+                return false;
+            case 'Done':
+                return false;
+            case 'Cancelled':
+                return false;
+        }
+        return true;
+    }
+    private function orderStateIsCancelable(OrderEntity $order): bool
+    {
+        $stateName = $order->getStateMachineState()->getName();
+        switch ($stateName) {
+            case 'Done':
+                return false;
+        }
+        return true;
+    }
+
+    private function getOrderEntities(Context $context, bool $applyFilter)
+    {
+        $criteria = $applyFilter ? $this->addCriteriaFilterDate(new Criteria()) : new Criteria();
 
         /** @var EntitySearchResult $entities */
         $entities = $this->orderRepository->search($criteria, Context::createDefaultContext());
+
+        if(count($entities) === 0){
+            return 0;
+        }
+        return $entities;
+    }
+    private function writeFile(Context $context)
+    {
+        /** @var EntitySearchResult $entities */
+        $entities = $this->getOrderEntities($context, true);
 
         if(count($entities) === 0){
             return;
@@ -151,8 +298,14 @@ class OrderInterfaceController extends AbstractController
         $exportData = [];
 
         /** @var OrderEntity $order */
-        foreach($entities as $orderID => $order){
-            $this->updateOrderStatusInProgress($orderID, 'complete');
+        foreach($entities as $orderID => $order)
+        {
+            if(!$this->orderStateIsProcessable($order))
+            {
+                continue;
+            }
+            $this->updateOrderStatus($orderID, 'process');
+            $this->updateOrderStatus($orderID, 'complete');
             // $this->updateOrderDeliveryStatus($this->getDeliveryEntityID($orderID),'ship');
             // init exportVar
             $exportData = [];
@@ -266,7 +419,7 @@ class OrderInterfaceController extends AbstractController
         );
     }
     //process, complete, cancel, reopen
-    private function updateOrderStatusInProgress(string $entityID, $transition)
+    private function updateOrderStatus(string $entityID, $transition)
     {
         $this->orderService->orderStateTransition($entityID, $transition, new ParameterBag([]),Context::createDefaultContext());
     }

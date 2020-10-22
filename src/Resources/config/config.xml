@@ -54,4 +54,19 @@
             <helpText lang="de-DE">Geben Sie das dem Nutzernamen entsprechende Passwort ein.</helpText>
         </input-field>
     </card>
+    
+    <card>
+        <title>REST Api</title>
+        <title lang="de-DE">Benutzerdaten</title>
+        <input-field>
+            <name>username</name>
+            <label>Api clientID</label>
+            <label lang="de-DE">API ClientID</label>
+        </input-field>
+        <input-field type="password">
+            <name>password</name>
+            <label>Api client secret</label>
+            <label lang="de-DE">API Client secret</label>
+        </input-field>
+    </card>
 </config>

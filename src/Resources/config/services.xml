@@ -12,12 +12,13 @@
             <argument id="order_address.repository" type="service" />
             <argument id="order_line_item.repository" type="service" />
             <argument id="product.repository" type="service" />
+            <argument id="order_delivery.repository" type="service" />
+
+            <argument type="service" id="Shopware\Core\Checkout\Order\SalesChannel\OrderService" />
             
             <call method="setContainer">
                 <argument type="service" id="service_container" />
-            </call>
-
-            
+            </call>           
 
         </service>
 

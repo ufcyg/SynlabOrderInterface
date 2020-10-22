@@ -18,6 +18,13 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\RangeFilter;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
+
+
+use GuzzleHttp\Client;
+use Shopware\Core\Checkout\Order\Aggregate\OrderDelivery\OrderDeliveryEntity;
+use Shopware\Core\Checkout\Order\SalesChannel\OrderService;
+use Symfony\Component\HttpFoundation\ParameterBag;
+
 /**
  * @RouteScope(scopes={"api"})
  */
@@ -31,6 +38,8 @@ class OrderInterfaceController extends AbstractController
     private $lineItemsRepository;
     /** @var EntityRepositoryInterface $productsRepository */
     private $productsRepository;
+    /** @var EntityRepositoryInterface $orderDeliveryRepository */
+    private $orderDeliveryRepository;
     /** @var string */
     private $todaysFolderPath;
     /** @var CSVFactory $csvFactory */
@@ -39,17 +48,26 @@ class OrderInterfaceController extends AbstractController
     private $systemConfigService;
     /** @var string $companyID */
     private $companyID;
+    /** @var OrderService $orderService */
+    private $orderService;
+    /** @var OrderInterfaceRestApiHandler $apiHandler */
+    private $apiHandler;
     public function __construct(SystemConfigService $systemConfigService,
                                 EntityRepositoryInterface $orderRepository,
                                 EntityRepositoryInterface $orderDeliveryAddressRepository,
                                 EntityRepositoryInterface $lineItemsRepository,
-                                EntityRepositoryInterface $productsRepository)
+                                EntityRepositoryInterface $productsRepository,
+                                EntityRepositoryInterface $orderDeliveryRepository,
+                                OrderService $orderService)
     {
+        $this->apiHandler = new OrderInterfaceRestApiHandler($systemConfigService);
         $this->systemConfigService = $systemConfigService;
         $this->orderRepository = $orderRepository;
         $this->orderDeliveryAddressRepository = $orderDeliveryAddressRepository;
         $this->lineItemsRepository = $lineItemsRepository;
         $this->productsRepository = $productsRepository;
+        $this->orderDeliveryRepository = $orderDeliveryRepository;
+        $this->orderService = $orderService;
         $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
         $this->csvFactory = new CSVFactory($this->companyID);
     }
@@ -134,8 +152,10 @@ class OrderInterfaceController extends AbstractController
         }
         $this->createDateFolder();
         $exportData = [];
+
         /** @var OrderEntity $order */
-        foreach($entities as $order){
+        foreach($entities as $orderID => $order){
+            $this->updateOrderStatus($order,$orderID);
             // init exportVar
             $exportData = [];
             /** @var string $orderID */
@@ -246,5 +266,31 @@ class OrderInterfaceController extends AbstractController
             'cityDelivery' => $deliverAddressEntity->getCity(),
             'streetDelivery' => $deliverAddressEntity->getStreet()
         );
+    }
+
+    private function updateOrderStatus(OrderEntity $order, string $entityID)
+    {
+        $this->orderService->orderStateTransition($entityID, 'cancel', new ParameterBag([]),Context::createDefaultContext());
+        // $orderDeliveryEntity = $this->getDeliveryEntity($entityID);
+        // $response = $this->apiHandler->request('POST', '_action/order/' . $entityID . '/state/cancelled');
+        // $body = $response->getBody();
+        // $contents = $response->getBody()->getContents();
+        
+        // $orderArray = json_decode($contents,true);
+    }
+
+    private function getDeliveryEntity(string $orderEntityID): OrderDeliveryEntity
+    {
+        $criteria = new Criteria();
+        $entities = $this->orderDeliveryRepository->search($criteria, Context::createDefaultContext());
+
+        /** @var OrderDeliveryEntity $orderDelivery */
+        foreach($entities as $id => $orderDelivery)
+        {
+            if ($orderDelivery->getOrderId() === $orderEntityID)
+            {
+                return $orderDelivery;
+            }
+        }
     }
 }

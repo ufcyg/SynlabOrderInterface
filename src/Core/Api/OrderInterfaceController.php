@@ -50,8 +50,6 @@ class OrderInterfaceController extends AbstractController
     private $companyID;
     /** @var OrderService $orderService */
     private $orderService;
-    /** @var OrderInterfaceRestApiHandler $apiHandler */
-    private $apiHandler;
     public function __construct(SystemConfigService $systemConfigService,
                                 EntityRepositoryInterface $orderRepository,
                                 EntityRepositoryInterface $orderDeliveryAddressRepository,
@@ -60,7 +58,6 @@ class OrderInterfaceController extends AbstractController
                                 EntityRepositoryInterface $orderDeliveryRepository,
                                 OrderService $orderService)
     {
-        $this->apiHandler = new OrderInterfaceRestApiHandler($systemConfigService);
         $this->systemConfigService = $systemConfigService;
         $this->orderRepository = $orderRepository;
         $this->orderDeliveryAddressRepository = $orderDeliveryAddressRepository;
@@ -105,7 +102,7 @@ class OrderInterfaceController extends AbstractController
     public function writeOrders(Context $context): Response
     {
         $this->writeFile($context);
-
+        
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -155,7 +152,8 @@ class OrderInterfaceController extends AbstractController
 
         /** @var OrderEntity $order */
         foreach($entities as $orderID => $order){
-            $this->updateOrderStatus($order,$orderID);
+            $this->updateOrderStatusInProgress($orderID, 'complete');
+            // $this->updateOrderDeliveryStatus($this->getDeliveryEntityID($orderID),'ship');
             // init exportVar
             $exportData = [];
             /** @var string $orderID */
@@ -267,19 +265,13 @@ class OrderInterfaceController extends AbstractController
             'streetDelivery' => $deliverAddressEntity->getStreet()
         );
     }
-
-    private function updateOrderStatus(OrderEntity $order, string $entityID)
+    //process, complete, cancel, reopen
+    private function updateOrderStatusInProgress(string $entityID, $transition)
     {
-        $this->orderService->orderStateTransition($entityID, 'cancel', new ParameterBag([]),Context::createDefaultContext());
-        // $orderDeliveryEntity = $this->getDeliveryEntity($entityID);
-        // $response = $this->apiHandler->request('POST', '_action/order/' . $entityID . '/state/cancelled');
-        // $body = $response->getBody();
-        // $contents = $response->getBody()->getContents();
-        
-        // $orderArray = json_decode($contents,true);
+        $this->orderService->orderStateTransition($entityID, $transition, new ParameterBag([]),Context::createDefaultContext());
     }
 
-    private function getDeliveryEntity(string $orderEntityID): OrderDeliveryEntity
+    private function getDeliveryEntityID(string $orderEntityID): string
     {
         $criteria = new Criteria();
         $entities = $this->orderDeliveryRepository->search($criteria, Context::createDefaultContext());
@@ -289,8 +281,13 @@ class OrderInterfaceController extends AbstractController
         {
             if ($orderDelivery->getOrderId() === $orderEntityID)
             {
-                return $orderDelivery;
+                return $orderDelivery->getId();
             }
         }
+    }
+    //ship, ship_partially, retour, retour_partially, cancel, reopen
+    private function updateOrderDeliveryStatus(string $entityID, string $transition)
+    {
+        $this->orderService->orderDeliveryStateTransition($entityID, $transition, new ParameterBag([]),Context::createDefaultContext());
     }
 }

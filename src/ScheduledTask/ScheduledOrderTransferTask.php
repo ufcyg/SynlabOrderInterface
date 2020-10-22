@@ -15,7 +15,7 @@ class ScheduledOrderTransferTask extends ScheduledTask
     {
         return 86400; // daily
     }
-
+    /** fixing swagging bullshit, quick and dirty REFACTORING */
     public function getDeadMessageId()
     {
         return $this->gen_uuid();

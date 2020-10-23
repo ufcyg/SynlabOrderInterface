@@ -33,17 +33,9 @@ class OrderInterfaceRestApiHandler
 
     private function getAdminAccess(): void
     {
-        // $body = \json_encode([
-        //     'client_id' => 'administration',
-        //     'grant_type' => 'password',
-        //     'scopes' => $this->config->get('SynlabOrderInterface.config.scope'),
-        //     'username' => $this->config->get('SynlabOrderInterface.config.username'),
-        //     'password' => $this->config->get('SynlabOrderInterface.config.password')
-        // ]);
-
         $body = \json_encode([
-            'client_id' => $this->config->get('SynlabOrderInterface.config.username'),//"SWIAQTHSWXLQSZVUQJHZBFJRAA",
-	        'client_secret' => $this->config->get('SynlabOrderInterface.config.password'),//"Q3g0NmFlb3NmM1FQS1lhNVk5V09vY1E4ZGxnbTZWbVdjMW1vQms",
+            'client_id' => $this->config->get('SynlabOrderInterface.config.username'),
+	        'client_secret' => $this->config->get('SynlabOrderInterface.config.password'),
             'grant_type' => "client_credentials",
             'scopes' => $this->config->get('SynlabOrderInterface.config.scope')
         ]);
@@ -65,7 +57,6 @@ class OrderInterfaceRestApiHandler
     private function setAccessData(array $body): void
     {
         $this->accessToken = $body['access_token'];
-        // $this->refreshToken = $body['refresh_token'];
         $this->expiresAt = $this->calculateExpiryTime((int) $body['expires_in']);
     }
 

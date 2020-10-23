@@ -5,17 +5,28 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
-        <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController" public="true">
-            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
 
+        <service id="SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils" public="true">      
+            <argument type="service" id="Shopware\Core\Checkout\Order\SalesChannel\OrderService" />
+        </service>
+
+        <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" public="true">
+        
+        </service>
+
+        <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer" public="true">
             <argument id="order.repository" type="service" />
             <argument id="order_address.repository" type="service" />
             <argument id="order_line_item.repository" type="service" />
             <argument id="product.repository" type="service" />
-            <argument id="order_delivery.repository" type="service" />
+            <argument id="order_delivery.repository" type="service" />  
+        </service>
 
-            <argument type="service" id="Shopware\Core\Checkout\Order\SalesChannel\OrderService" />
-            
+        <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController" public="true">
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils" />
             <call method="setContainer">
                 <argument type="service" id="service_container" />
             </call>           
@@ -28,15 +39,8 @@
         </service>
 
         <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderTransferTaskHandler">
-            <!-- <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" /> -->
-
             <argument type="service" id="scheduled_task.repository" />
             <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
-            
-            <!-- <argument id="order.repository" type="service" />
-            <argument id="order_address.repository" type="service" />
-            <argument id="order_line_item.repository" type="service" />
-            <argument id="product.repository" type="service" /> -->
 
             <tag name="messenger.message_handler" />
         </service>

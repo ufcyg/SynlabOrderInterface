@@ -51,7 +51,7 @@ class ScheduledOrderTransferTaskHandler extends ScheduledTaskHandler
     public function run(): void
     {
         // $interfaceController = new OrderInterfaceController($this->systemConfigService, $this->orderRepository, $this->orderDeliveryAddressRepository, $this->lineItemsRepository, $this->productsRepository);
-        $this->interfaceController->writeOrders(Context::createDefaultContext());
+        $this->interfaceController->submitOrders(Context::createDefaultContext());
     }
 
     

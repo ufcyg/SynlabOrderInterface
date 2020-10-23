@@ -7,15 +7,15 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 class OrderInterfaceRepositoryContainer
 {
     /** @var EntityRepositoryInterface $orderRepository */
-    private $orderRepository;
+    public $orderRepository;
     /** @var EntityRepositoryInterface $orderDeliveryAddressRepository */
-    private $orderDeliveryAddressRepository;
+    public $orderDeliveryAddressRepository;
     /** @var EntityRepositoryInterface $lineItems */
-    private $lineItemsRepository;
+    public $lineItemsRepository;
     /** @var EntityRepositoryInterface $productsRepository */
-    private $productsRepository;
+    public $productsRepository;
     /** @var EntityRepositoryInterface $orderDeliveryRepository */
-    private $orderDeliveryRepository;
+    public $orderDeliveryRepository;
     public function __construct(EntityRepositoryInterface $orderRepository,
                                 EntityRepositoryInterface $orderDeliveryAddressRepository,
                                 EntityRepositoryInterface $lineItemsRepository,
@@ -29,5 +29,45 @@ class OrderInterfaceRepositoryContainer
         $this->lineItemsRepository = $lineItemsRepository;
         $this->productsRepository = $productsRepository;
         $this->orderDeliveryRepository = $orderDeliveryRepository;        
+    }
+
+    /**
+     * Get the value of orderRepository
+     */ 
+    public function getOrderRepository()
+    {
+        return $this->orderRepository;
+    }
+
+    /**
+     * Get the value of orderDeliveryAddressRepository
+     */ 
+    public function getOrderDeliveryAddressRepository()
+    {
+        return $this->orderDeliveryAddressRepository;
+    }
+
+    /**
+     * Get the value of lineItemsRepository
+     */ 
+    public function getLineItemsRepository()
+    {
+        return $this->lineItemsRepository;
+    }
+
+    /**
+     * Get the value of productsRepository
+     */ 
+    public function getProductsRepository()
+    {
+        return $this->productsRepository;
+    }
+
+    /**
+     * Get the value of orderDeliveryRepository
+     */ 
+    public function getOrderDeliveryRepository()
+    {
+        return $this->orderDeliveryRepository;
     }
 }

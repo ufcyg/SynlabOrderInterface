@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace SynlabOrderInterface\Core\Api;
+namespace SynlabOrderInterface\Core\Api\Utilities;
 
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Symfony\Component\PropertyAccess\PropertyAccess;

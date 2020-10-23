@@ -3,18 +3,15 @@
 namespace SynlabOrderInterface\Core\Api;
 
 use Shopware\Core\Framework\Context;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Shopware\Core\Checkout\Order\OrderEntity;
-use Shopware\Core\Checkout\Order\Aggregate\OrderAddress\OrderAddressEntity;
 use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
-use Shopware\Core\Checkout\Order\Aggregate\OrderDelivery\OrderDeliveryEntity;
+use SynlabOrderInterface\Core\Api\Utilities\CSVFactory;
 use SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils;
@@ -39,6 +36,7 @@ class OrderInterfaceController extends AbstractController
     private $companyID;
     /** @var OIOrderServiceUtils $oiOrderServiceUtils */
     private $oiOrderServiceUtils;
+
     public function __construct(SystemConfigService $systemConfigService,
                                 OrderInterfaceRepositoryContainer $repositoryContainer,
                                 OrderInterfaceUtils $oiUtils,
@@ -48,12 +46,13 @@ class OrderInterfaceController extends AbstractController
         $this->repositoryContainer = $repositoryContainer;
         $this->oiUtils = $oiUtils;
         $this->oiOrderServiceUtils = $oiOrderServiceUtils;
+
         $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
         $this->csvFactory = new CSVFactory($this->companyID);
     }
 
     /**
-     * @Route("/api/v{version}/_action/synlab-order-interface/submitOrders", name="api.custom.synlab_order_interface.chill", methods={"POST"})
+     * @Route("/api/v{version}/_action/synlab-order-interface/submitOrders", name="api.custom.synlab_order_interface.submitOrders", methods={"POST"})
      * @param Context $context;
      * @return Response
      */
@@ -71,13 +70,14 @@ class OrderInterfaceController extends AbstractController
      */
     public function submitArticlebase(Context $context): Response
     {
-        $products = $this->oiUtils->getProducts();
+        $products = $this->oiUtils->getProducts($this->repositoryContainer->getProductsRepository(), $context);
 
         foreach ($products as $product)
         {
             $articleBase = $this->csvFactory->generateArticlebase();
             file_put_contents($this->todaysFolderPath . '/' . $this->companyID . '-' . 'synlabArticlebase.csv', $articleBase);
         }
+
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -89,7 +89,7 @@ class OrderInterfaceController extends AbstractController
     public function reopenOrders(Context $context)
     {
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($context, false);
+        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), false, $context);
 
         if(count($entities) === 0){
             return;
@@ -113,7 +113,7 @@ class OrderInterfaceController extends AbstractController
     public function processOrders(Context $context)
     {
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($context, false);
+        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), false, $context);
 
         if(count($entities) === 0){
             return;
@@ -137,7 +137,7 @@ class OrderInterfaceController extends AbstractController
     public function completeOrders(Context $context)
     {
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($context, false);
+        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), false, $context);
 
         if(count($entities) === 0){
             return;
@@ -161,7 +161,7 @@ class OrderInterfaceController extends AbstractController
     public function cancelOrders(Context $context)
     {
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($context, false);
+        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), false, $context);
 
         if(count($entities) === 0){
             return;
@@ -180,12 +180,11 @@ class OrderInterfaceController extends AbstractController
     private function writeFile(Context $context)
     {
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($context, true);
+        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), true, $context);
 
         if(count($entities) === 0){
             return;
         }
-        $this->oiUtils->createDateFolder();
         $exportData = [];
 
         /** @var OrderEntity $order */
@@ -202,29 +201,29 @@ class OrderInterfaceController extends AbstractController
             $exportData = [];
             /** @var string $orderID */
             $orderID = $order->getId(); // orderID used to search inside other Repositories for corresponding data
+
             $orderNumber = $order->getOrderNumber();
 
-            if (!file_exists($this->todaysFolderPath . '/' . $orderNumber)) {
-                mkdir($this->todaysFolderPath . '/' . $orderNumber, 0777, true);
-            }
+            $folderPath = '';
+            $this->oiUtils->createOrderFolder($orderNumber,$folderPath);
 
             //customer eMail
             /** @var OrderCustomerEntity $customerEntity */
             $customerEntity = $order->getOrderCustomer();
             $eMailAddress = $customerEntity->getEmail();
             // deliveryaddress
-            $exportData = $this->oiUtils->getDeliveryAddress($orderID, $eMailAddress);// ordered products
-            $orderedProducts = $this->oiUtils->getOrderedProducts($orderID);
+            $exportData = $this->oiUtils->getDeliveryAddress($this->repositoryContainer->getOrderDeliveryAddressRepository(), $orderID, $eMailAddress, $context);// ordered products
+            $orderedProducts = $this->oiUtils->getOrderedProducts($this->repositoryContainer->getLineItemsRepository(), $orderID, $context);
             $i = 0;
             foreach($orderedProducts as $product)
             {
                 array_push($exportData, $product);
                 $fileContent = $this->csvFactory->generateDetails($exportData, $orderNumber, $i);
-                file_put_contents($this->todaysFolderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-' . $product->getPosition() . '-details.csv',$fileContent);    
+                file_put_contents($folderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-' . $product->getPosition() . '-details.csv',$fileContent);    
                 $i++;
             }
             $fileContent = $this->csvFactory->generateHeader($exportData, $orderNumber);
-            file_put_contents($this->todaysFolderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-header.csv',$fileContent);
+            file_put_contents($folderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-header.csv',$fileContent);
         }
     }
 }

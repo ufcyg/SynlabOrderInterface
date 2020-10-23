@@ -13,18 +13,24 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\RangeFilter;
 
 class OrderInterfaceUtils
 {
+    /** @var string $folderRoot */
+    private $folderRoot;
+    /** @var string $todaysFolderPath */
+    private $todaysFolderPath;
+    
     public function __construct()
     {
-        
+        $this->folderRoot = '../custom/plugins/SynlabOrderInterface/SubmittedOrders/';
+        $this->todaysFolderPath = '';
     }
     /// boolean checks
-    public function newOrdersCk(EntityRepositoryInterface $orderRepository): bool
+    public function newOrdersCk(EntityRepositoryInterface $orderRepository, Context $context): bool
     {
         $criteria = new Criteria();
         $this->addCriteriaFilterDate($criteria);
 
         /** @var EntitySearchResult $entities */
-        $entities = $orderRepository->search($criteria, Context::createDefaultContext());
+        $entities = $orderRepository->search($criteria, $context);
 
         if(count($entities) === 0){
             return false;
@@ -57,33 +63,41 @@ class OrderInterfaceUtils
         return $timeStamp;
     }
 
-
     public function createDateFolder()
     {
         $timeStamp = new DateTime();
         $timeStamp = $timeStamp->format('d-m-Y');
-        $this->todaysFolderPath = '../custom/plugins/SynlabOrderInterface/SubmittedOrders/' . $timeStamp;
+        $this->todaysFolderPath = $this->folderRoot . $timeStamp;
         if (!file_exists($this->todaysFolderPath)) {
             mkdir($this->todaysFolderPath, 0777, true);
         }    
     }
 
+    public function createOrderFolder(string $orderNumber,&$folderPath)
+    {
+        if ($this->todaysFolderPath === '')
+        {
+            $this->createDateFolder();
+        }
+        if (!file_exists($this->todaysFolderPath . '/' . $orderNumber)) {
+            mkdir($this->todaysFolderPath . '/' . $orderNumber, 0777, true);
+        }
+        $folderPath = $this->todaysFolderPath;
+    }
 
-
-
-    public function getProducts(): EntitySearchResult
+    public function getProducts(EntityRepositoryInterface $productsRepository, Context $context): EntitySearchResult
     {
         $criteria = new Criteria();
         /** @var EntitySearchResult */
-        return $this->productsRepository->search($criteria, Context::createDefaultContext());
+        return $productsRepository->search($criteria, $context);
     }
 
-    public function getOrderEntities(Context $context, bool $applyFilter)
+    public function getOrderEntities(EntityRepositoryInterface $orderRepository, bool $applyFilter, Context $context)
     {
         $criteria = $applyFilter ? $this->addCriteriaFilterDate(new Criteria()) : new Criteria();
 
         /** @var EntitySearchResult $entities */
-        $entities = $this->orderRepository->search($criteria, Context::createDefaultContext());
+        $entities = $orderRepository->search($criteria, $context);
 
         if(count($entities) === 0){
             return 0;
@@ -91,13 +105,13 @@ class OrderInterfaceUtils
         return $entities;
     }
 
-    public function getOrderedProducts(string $orderID): array
+    public function getOrderedProducts(EntityRepositoryInterface $lineItemsRepository, string $orderID, Context $context): array
     {
         /** @var Criteria $criteria */
         $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('orderId',$orderID));
+        $criteria->addFilter(new EqualsFilter('orderId', $orderID));
         /** @var EntitySearchResult $lineItemEntity */
-        $lineItemEntity = $this->lineItemsRepository->search($criteria,Context::createDefaultContext());
+        $lineItemEntity = $lineItemsRepository->search($criteria, $context);
 
         $lineItemArray = [];
         $i = 0;
@@ -110,13 +124,13 @@ class OrderInterfaceUtils
         return $lineItemArray;
     }
 
-    public function getDeliveryAddress(string $orderID, string $eMailAddress): array
+    public function getDeliveryAddress(EntityRepositoryInterface $orderDeliveryAddressRepository, string $orderID, string $eMailAddress, Context $context): array
     {
         /** @var Criteria $criteria */
         $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('orderId',$orderID));
+        $criteria->addFilter(new EqualsFilter('orderId', $orderID));
         /** @var EntitySearchResult $addressEntity */
-        $addressEntity = $this->orderDeliveryAddressRepository->search($criteria,Context::createDefaultContext());
+        $addressEntity = $orderDeliveryAddressRepository->search($criteria, $context);
 
         /** @var OrderAddressEntity $deliverAddressEntity */
         $deliverAddressEntity;
@@ -148,10 +162,10 @@ class OrderInterfaceUtils
         );
     }
 
-    public function getDeliveryEntityID(string $orderEntityID): string
+    public function getDeliveryEntityID(EntityRepositoryInterface $orderDeliveryRepository, string $orderEntityID, Context $context): string
     {
         $criteria = new Criteria();
-        $entities = $this->orderDeliveryRepository->search($criteria, Context::createDefaultContext());
+        $entities = $orderDeliveryRepository->search($criteria, $context);
 
         /** @var OrderDeliveryEntity $orderDelivery */
         foreach($entities as $id => $orderDelivery)

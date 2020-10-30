@@ -21,22 +21,27 @@ class SynlabOrderInterface extends Plugin
         }
     }
 
+    /** @inheritDoc */
     public function postInstall(InstallContext $installContext): void
     {
     }
 
+    /** @inheritDoc */
     public function update(UpdateContext $updateContext): void
     {
     }
 
+    /** @inheritDoc */
     public function postUpdate(UpdateContext $updateContext): void
     {
     }
 
+    /** @inheritDoc */
     public function activate(ActivateContext $activateContext): void
     {
     }
 
+    /** @inheritDoc */
     public function deactivate(DeactivateContext $deactivateContext): void
     {
     }

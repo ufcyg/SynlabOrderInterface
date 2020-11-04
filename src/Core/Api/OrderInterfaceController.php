@@ -48,7 +48,8 @@ class OrderInterfaceController extends AbstractController
         $this->oiOrderServiceUtils = $oiOrderServiceUtils;
 
         $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
-        $this->csvFactory = new CSVFactory($this->companyID);
+        $this->csvFactory = new CSVFactory($this->companyID, $this->repositoryContainer);
+        $this->todaysFolderPath;
     }
 
     /**
@@ -70,14 +71,16 @@ class OrderInterfaceController extends AbstractController
      */
     public function submitArticlebase(Context $context): Response
     {
+        $this->oiUtils->createDateFolder();
+        $this->todaysFolderPath = $this->oiUtils->createTodaysFolderPath();        
         $products = $this->oiUtils->getProducts($this->repositoryContainer->getProductsRepository(), $context);
 
+        $csvString = '';
         foreach ($products as $product)
         {
-            $articleBase = $this->csvFactory->generateArticlebase();
-            file_put_contents($this->todaysFolderPath . '/' . $this->companyID . '-' . 'synlabArticlebase.csv', $articleBase);
+            $csvString = $this->csvFactory->generateArticlebase($csvString, $product, $context);
         }
-
+        file_put_contents($this->todaysFolderPath . '/' . $this->companyID . '-' . 'synlabArticlebase.csv', $csvString);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -180,7 +183,7 @@ class OrderInterfaceController extends AbstractController
     private function writeFile(Context $context)
     {
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), true, $context);
+        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), false, $context);
 
         if(count($entities) === 0){
             return;

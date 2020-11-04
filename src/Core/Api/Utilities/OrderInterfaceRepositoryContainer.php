@@ -7,20 +7,26 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 class OrderInterfaceRepositoryContainer
 {
     /** @var EntityRepositoryInterface $orderRepository */
-    public $orderRepository;
+    private $orderRepository;
     /** @var EntityRepositoryInterface $orderDeliveryAddressRepository */
-    public $orderDeliveryAddressRepository;
+    private $orderDeliveryAddressRepository;
     /** @var EntityRepositoryInterface $lineItems */
-    public $lineItemsRepository;
+    private $lineItemsRepository;
     /** @var EntityRepositoryInterface $productsRepository */
-    public $productsRepository;
+    private $productsRepository;
     /** @var EntityRepositoryInterface $orderDeliveryRepository */
-    public $orderDeliveryRepository;
+    private $orderDeliveryRepository;
+    /** @var EntityRepositoryInterface $manufacturerTranslation */
+    private $manufacturerTranslation;
+    /** @var EntityRepositoryInterface $productTranslation */
+    private $productTranslation;
     public function __construct(EntityRepositoryInterface $orderRepository,
                                 EntityRepositoryInterface $orderDeliveryAddressRepository,
                                 EntityRepositoryInterface $lineItemsRepository,
                                 EntityRepositoryInterface $productsRepository,
-                                EntityRepositoryInterface $orderDeliveryRepository
+                                EntityRepositoryInterface $orderDeliveryRepository,
+                                EntityRepositoryInterface $manufacturerTranslation,
+                                EntityRepositoryInterface $productTranslation
 
     )
     {
@@ -28,7 +34,9 @@ class OrderInterfaceRepositoryContainer
         $this->orderDeliveryAddressRepository = $orderDeliveryAddressRepository;
         $this->lineItemsRepository = $lineItemsRepository;
         $this->productsRepository = $productsRepository;
-        $this->orderDeliveryRepository = $orderDeliveryRepository;        
+        $this->orderDeliveryRepository = $orderDeliveryRepository;     
+        $this->manufacturerTranslation = $manufacturerTranslation;   
+        $this->productTranslation = $productTranslation;
     }
 
     /**
@@ -69,5 +77,45 @@ class OrderInterfaceRepositoryContainer
     public function getOrderDeliveryRepository()
     {
         return $this->orderDeliveryRepository;
+    }
+
+    /**
+     * Get the value of manufacturerTranslation
+     */ 
+    public function getManufacturerTranslation()
+    {
+        return $this->manufacturerTranslation;
+    }
+
+    /**
+     * Set the value of manufacturerTranslation
+     *
+     * @return  self
+     */ 
+    public function setManufacturerTranslation($manufacturerTranslation)
+    {
+        $this->manufacturerTranslation = $manufacturerTranslation;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of productTranslation
+     */ 
+    public function getProductTranslation()
+    {
+        return $this->productTranslation;
+    }
+
+    /**
+     * Set the value of productTranslation
+     *
+     * @return  self
+     */ 
+    public function setProductTranslation($productTranslation)
+    {
+        $this->productTranslation = $productTranslation;
+
+        return $this;
     }
 }

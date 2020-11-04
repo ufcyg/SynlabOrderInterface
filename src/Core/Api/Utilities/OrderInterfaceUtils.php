@@ -65,12 +65,17 @@ class OrderInterfaceUtils
 
     public function createDateFolder()
     {
-        $timeStamp = new DateTime();
-        $timeStamp = $timeStamp->format('d-m-Y');
-        $this->todaysFolderPath = $this->folderRoot . $timeStamp;
+        $this->todaysFolderPath = $this->createTodaysFolderPath();
         if (!file_exists($this->todaysFolderPath)) {
             mkdir($this->todaysFolderPath, 0777, true);
-        }    
+        }   
+    }
+    public function createTodaysFolderPath():string
+    {
+        $timeStamp = new DateTime();
+        $timeStamp = $timeStamp->format('d-m-Y');
+         
+        return $this->folderRoot . $timeStamp;
     }
 
     public function createOrderFolder(string $orderNumber,&$folderPath)

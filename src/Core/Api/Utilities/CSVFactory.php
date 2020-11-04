@@ -3,6 +3,11 @@
 namespace SynlabOrderInterface\Core\Api\Utilities;
 
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
+use Shopware\Core\Content\Product\Aggregate\ProductTranslation\ProductTranslationEntity;
+use Shopware\Core\Content\Product\ProductEntity;
+use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
 class CSVFactory
@@ -11,68 +16,119 @@ class CSVFactory
     private $properyAccessor;
     /** @var string $companyID */
     private $companyID;
-
-    public function __construct(string $companyID)
+    /** @var OrderInterfaceRepositoryContainer $repositoryContainer */
+    private $repositoryContainer;
+    /** @var Context $currentContext */
+    private $currentContext;
+    public function __construct(string $companyID, OrderInterfaceRepositoryContainer $repositoryContainer)
     {
         $this->properyAccessor = PropertyAccess::createPropertyAccessor();
         $this->companyID = $companyID;
+        $this->repositoryContainer = $repositoryContainer;
     }
 
-    public function generateArticlebase()
+    public function generateArticlebase(string $csvString, ProductEntity $product, Context $context): string
     {
+        $this->currentContext = $context;
+        $customFields = $this->getProductCustomField($product);
         $placeholder = '';
-        $csvString = '';
-        $csvString = $csvString . 'Nr.' . ';' . 'Feldname' . ';' . 'Wert' . "\n";                                       // (maximum)Length
-        $csvString = $csvString . '1' . ';' . 'Kennung' . ';' . $this->companyID . "\n";                                // (maximum)Length
-        $csvString = $csvString . '2' . ';' . 'Artikelnummer' . ';' . $placeholder . "\n";                              // (maximum)Length
-        $csvString = $csvString . '3' . ';' . 'Matchcode' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '4' . ';' . 'Artikelbezeichnung 1' . ';' . $placeholder . "\n";                       // (maximum)Length
-        $csvString = $csvString . '5' . ';' . 'Artikelbezeichnung 2' . ';' . $placeholder . "\n";                       // (maximum)Length
-        $csvString = $csvString . '6' . ';' . 'Artikelbezeichnung 3' . ';' . $placeholder . "\n";                       // (maximum)Length
-        $csvString = $csvString . '7' . ';' . 'Warengruppe' . ';' . $placeholder . "\n";                                // (maximum)Length
-        $csvString = $csvString . '8' . ';' . 'Basismengeneinheit' . ';' . $placeholder . "\n";                         // (maximum)Length
-        $csvString = $csvString . '9' . ';' . 'Basismengeneinheit, Gewicht in KG, netto' . ';' . $placeholder . "\n";   // (maximum)Length
-        $csvString = $csvString . '10' . ';' . 'Basismengeneinheit, Gewicht in KG, brutto' . ';' . $placeholder . "\n"; // (maximum)Length
-        $csvString = $csvString . '11' . ';' . 'Basismengeneinheit, Länge in mm' . ';' . $placeholder . "\n";           // (maximum)Length
-        $csvString = $csvString . '12' . ';' . 'Basismengeneinheit, Breite in mm' . ';' . $placeholder . "\n";          // (maximum)Length
-        $csvString = $csvString . '13' . ';' . 'Basismengeneinheit, Höhe in mm' . ';' . $placeholder . "\n";            // (maximum)Length
-        $csvString = $csvString . '14' . ';' . 'Verpackungseinheit (VE) Mengeneinheit' . ';' . $placeholder . "\n";     // (maximum)Length
-        $csvString = $csvString . '15' . ';' . 'VE Menge' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '16' . ';' . 'VE Mengeneinheit Gewicht in KG, netto' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '17' . ';' . 'VE Mengeneinheit Gewicht in KG, brutto' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '18' . ';' . 'VE Mengeneinheit, Länge in mm' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '19' . ';' . 'VE Mengeneinheit, Breite in mm' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '20' . ';' . 'VE Mengeneinheit, Höhe in mm' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '21' . ';' . 'Lademittel (LM) Typ' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '22' . ';' . 'LM Menge' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '23' . ';' . 'LM Mengeneinheit, Gewicht in KG, netto' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '24' . ';' . 'LM Mengeneinheit, Gewicht in KG, brutto' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '25' . ';' . 'LM Mengeneinheit, Länge in mm' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '26' . ';' . 'LM Mengeneinheit, Breite in mm' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '27' . ';' . 'LM Mengeneinheit, Höhe in mm' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '28' . ';' . 'EAN Nummer 1' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '29' . ';' . 'EAN Nummer 2' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '30' . ';' . 'EAN Nummer 3' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '31' . ';' . 'EAN Nummer 4' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '32' . ';' . 'EAN Nummer 5' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '33' . ';' . 'EAN Nummer VE' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '34' . ';' . 'Lief.Artikelnummer 1' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '35' . ';' . 'Lief.Artikelnummer 2' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '36' . ';' . 'Lief.Artikelnummer 3' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '37' . ';' . 'Lief.Artikelnummer 4' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '38' . ';' . 'Lief.Artikelnummer 5' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '39' . ';' . 'MHD Pflicht?' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '40' . ';' . 'MHD Restlaufzeit, WE' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '41' . ';' . 'MHD Restlaufzeit WA' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '42' . ';' . 'Maximale Haltbarkeit' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '43' . ';' . 'Chargen Pflicht?' . ';' . '0' . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '44' . ';' . 'S/N Erfassung WE?' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '45' . ';' . 'S/N Erfassung WA?' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '46' . ';' . 'Einzelpreis' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '47' . ';' . 'Zolltarifnummer' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '48' . ';' . 'Ursprungsland' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '49' . ';' . 'Hersteller' . ';' . $placeholder . "\n";                                  // (maximum)Length
-        $csvString = $csvString . '50' . ';' . 'Bemerkung' . ';' . $placeholder . "\n";                                  // (maximum)Length
+        // $csvString = $csvString . 'Nr.' . ';' . 'Feldname' . ';' . 'Wert' . "\n";                                    // (maximum)Length
+        $csvString = $csvString . $this->companyID . '.Artikelstamm' . ';';              // Kennung* (maximum)Length
+        $csvString = $csvString . $product->getProductNumber() . ';';                   // Artikelnummer* (28)
+        $csvString = $csvString . $placeholder . ';';                                  // Matchcode (28)Length
+        $csvString = $csvString . $this->getProductName($product) . ';';                       // Artikelbezeichnung 1* (30)Length
+        $csvString = $csvString . $placeholder . ';';                       // Artikelbezeichnung 2 (30)Length
+        $csvString = $csvString . $placeholder . ';';                       // Artikelbezeichnung 3 (30)Length
+        $csvString = $csvString . $placeholder . ';';                                // Warengruppe (6)Length
+        $csvString = $csvString . $placeholder . ';';                         // Basismengeneinheit* (3)Length
+        $csvString = $csvString . $placeholder . ';';   // Basismengeneinheit, Gewicht in KG, netto (9.5)Length
+        $csvString = $csvString . $product->getWeight() . ';'; // Basismengeneinheit, Gewicht in KG, brutto (9.5)Length
+        $csvString = $csvString . $product->getLength() . ';';           // Basismengeneinheit, Länge in mm (5.2)Length
+        $csvString = $csvString . $product->getWidth() . ';';          // Basismengeneinheit, Breite in mm (5.2)Length
+        $csvString = $csvString . $product->getHeight() . ';';            // Basismengeneinheit, Höhe in mm (5.2)Length
+        $csvString = $csvString . $placeholder . ';';     // Verpackungseinheit (VE) Mengeneinheit (3)Length
+        $csvString = $csvString . $product->getPurchaseUnit() . ';';                                  // VE Menge (8.3)Length
+        $csvString = $csvString . $placeholder . ';';     // VE Mengeneinheit Gewicht in KG, netto (9.5)Length
+        $csvString = $csvString . $placeholder . ';';    // VE Mengeneinheit Gewicht in KG, brutto (9.5)Length
+        $csvString = $csvString . $placeholder . ';';             // VE Mengeneinheit, Länge in mm (5.2)Length
+        $csvString = $csvString . $placeholder . ';';            // VE Mengeneinheit, Breite in mm (5.2)Length
+        $csvString = $csvString . $placeholder . ';';              // VE Mengeneinheit, Höhe in mm (5.2)Length
+        $csvString = $csvString . $placeholder . ';';                       // Lademittel (LM) Typ (3)Length
+        $csvString = $csvString . $placeholder . ';';                                  // LM Menge (8.3)Length
+        $csvString = $csvString . $placeholder . ';';    // LM Mengeneinheit, Gewicht in KG, netto (9.5)Length
+        $csvString = $csvString . $placeholder . ';';   // LM Mengeneinheit, Gewicht in KG, brutto (9.5)Length
+        $csvString = $csvString . $placeholder . ';';             // LM Mengeneinheit, Länge in mm (5.2)Length
+        $csvString = $csvString . $placeholder . ';';            // LM Mengeneinheit, Breite in mm (5.2)Length
+        $csvString = $csvString . $placeholder . ';';              // (LM Mengeneinheit, Höhe in mm 5.2)Length
+        $csvString = $csvString . $product->getEan() . ';';                              // EAN Nummer 1 (14)Length
+        $csvString = $csvString . $placeholder . ';';                              // EAN Nummer 2 (14)Length
+        $csvString = $csvString . $placeholder . ';';                              // EAN Nummer 3 (14)Length
+        $csvString = $csvString . $placeholder . ';';                              // EAN Nummer 4 (14)Length
+        $csvString = $csvString . $placeholder . ';';                              // EAN Nummer 5 (14)Length
+        $csvString = $csvString . $placeholder . ';';                             // EAN Nummer VE (14)Length
+        $csvString = $csvString . $placeholder . ';';                      // Lief.Artikelnummer 1 (18)Length
+        $csvString = $csvString . $placeholder . ';';                      // Lief.Artikelnummer 2 (18)Length
+        $csvString = $csvString . $placeholder . ';';                      // Lief.Artikelnummer 3 (18)Length
+        $csvString = $csvString . $placeholder . ';';                      // Lief.Artikelnummer 4 (18)Length
+        $csvString = $csvString . $placeholder . ';';                      // Lief.Artikelnummer 5 (18)Length
+        $csvString = $csvString . $placeholder . ';';                              // MHD Pflicht? (1)Length
+        if($customFields != null)
+        {
+            $csvString = $csvString . $customFields['custom_rieck_properties_MHD_WE'] . ';';                      // MHD Restlaufzeit, WE (5)Length
+            $csvString = $csvString . $customFields['custom_rieck_properties_MHD_WA'] . ';';                       // MHD Restlaufzeit WA (5)Length
+            $csvString = $csvString . $customFields['custom_rieck_properties_MHD'] . ';';                      // Maximale Haltbarkeit (5)Length
+        }        
+        $csvString = $csvString . '0' . ';';                                   // Chargen Pflicht? (1)Length
+        $csvString = $csvString . $placeholder . ';';                         // S/N Erfassung WE? (1)Length
+        $csvString = $csvString . $placeholder . ';';                         // S/N Erfassung WA? (1)Length
+        $csvString = $csvString . $placeholder . ';';                               // Einzelpreis (7.4)Length
+        $csvString = $csvString . $placeholder . ';';                           // Zolltarifnummer (25)Length
+        $csvString = $csvString . $placeholder . ';';                             // Ursprungsland (3)Length
+        $csvString = $csvString . $this->getManufacturerName($product) . ';';                                // Hersteller (15)Length
+        $csvString = $csvString . $placeholder . ';';                                 // Bemerkung (78)Length
+        $csvString = $csvString . "\n";
+        
+        return $csvString;
+    }
+    private function getManufacturerName(ProductEntity $product):string
+    {
+        $manufacturerID = $product->getManufacturerId();
+        $manufacturerTranslationRepository = $this->repositoryContainer->getManufacturerTranslation();
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productManufacturerId',$manufacturerID));
+        $manufacturer = $manufacturerTranslationRepository->search($criteria,$this->currentContext);
+        $manufacturer = $manufacturer->first();
+        $manufacturerName = $manufacturer->getName();
+        return $manufacturerName;
+    }
+    
+    private function getProductTranslation(ProductEntity $product):ProductTranslationEntity
+    {
+        $productID = $product->getId();
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productId',$productID));
+        /** @var EntityRepositoryInterface $productTranslationRepository */
+        $productTranslationRepository = $this->repositoryContainer->getProductTranslation();
+
+        $entities = $productTranslationRepository->search($criteria,$this->currentContext);
+        $context = $this->currentContext;
+        /** @var ProductTranslationEntity $translationEntity */
+        foreach($entities as $translationEntity)
+        {// TODO language
+            $translationEntity;
+        }
+        return $translationEntity;
+    }
+    private function getProductName(ProductEntity $product):string
+    {//maxlength 30
+        $translationEntity = $this->getProductTranslation($product);
+        return $translationEntity->getName();
+    }
+    private function getProductCustomField(ProductEntity $product)
+    {//maxlength 30
+        /** @var ProductTranslationEntity $translationEntity */
+        $translationEntity = $this->getProductTranslation($product);
+        return $translationEntity->getCustomFields();
     }
     public function generateHeader(array $associativeArray, string $orderNumber): string
     {

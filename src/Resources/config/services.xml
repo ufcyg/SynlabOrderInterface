@@ -19,6 +19,8 @@
             <argument id="order_line_item.repository" type="service" />
             <argument id="product.repository" type="service" />
             <argument id="order_delivery.repository" type="service" />  
+            <argument id="product_manufacturer_translation.repository" type="service" />  
+            <argument id="product_translation.repository" type="service" />  
         </service>
 
         <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController" public="true">

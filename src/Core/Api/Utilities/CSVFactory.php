@@ -30,17 +30,18 @@ class CSVFactory
     public function generateArticlebase(string $csvString, ProductEntity $product, Context $context): string
     {
         $this->currentContext = $context;
-        $customFields = $this->getProductCustomField($product);
+        $translationEntity = $this->getProductTranslation($product);
+        $customFields = $this->getProductCustomField($translationEntity);
         $placeholder = '';
         // $csvString = $csvString . 'Nr.' . ';' . 'Feldname' . ';' . 'Wert' . "\n";                                    // (maximum)Length
-        $csvString = $csvString . $this->companyID . '.Artikelstamm' . ';';              // Kennung* (maximum)Length
+        $csvString = $csvString . $this->companyID . '.Artikelstamm' . ';';                                             // Kennung* (maximum)Length
         $csvString = $csvString . $product->getProductNumber() . ';';                   // Artikelnummer* (28)
         $csvString = $csvString . $placeholder . ';';                                  // Matchcode (28)Length
-        $csvString = $csvString . $this->getProductName($product) . ';';                       // Artikelbezeichnung 1* (30)Length
+        $csvString = $csvString . $this->getProductName($translationEntity) . ';';                       // Artikelbezeichnung 1* (30)Length
         $csvString = $csvString . $placeholder . ';';                       // Artikelbezeichnung 2 (30)Length
         $csvString = $csvString . $placeholder . ';';                       // Artikelbezeichnung 3 (30)Length
         $csvString = $csvString . $placeholder . ';';                                // Warengruppe (6)Length
-        $csvString = $csvString . $placeholder . ';';                         // Basismengeneinheit* (3)Length
+        $csvString = $csvString . $translationEntity->getPackUnit() . ';';                         // Basismengeneinheit* (3)Length
         $csvString = $csvString . $placeholder . ';';   // Basismengeneinheit, Gewicht in KG, netto (9.5)Length
         $csvString = $csvString . $product->getWeight() . ';'; // Basismengeneinheit, Gewicht in KG, brutto (9.5)Length
         $csvString = $csvString . $product->getLength() . ';';           // Basismengeneinheit, Länge in mm (5.2)Length
@@ -71,21 +72,45 @@ class CSVFactory
         $csvString = $csvString . $placeholder . ';';                      // Lief.Artikelnummer 3 (18)Length
         $csvString = $csvString . $placeholder . ';';                      // Lief.Artikelnummer 4 (18)Length
         $csvString = $csvString . $placeholder . ';';                      // Lief.Artikelnummer 5 (18)Length
-        $csvString = $csvString . $placeholder . ';';                              // MHD Pflicht? (1)Length
-        if($customFields != null)
+        if ($customFields != null)
         {
-            $csvString = $csvString . $customFields['custom_rieck_properties_MHD_WE'] . ';';                      // MHD Restlaufzeit, WE (5)Length
-            $csvString = $csvString . $customFields['custom_rieck_properties_MHD_WA'] . ';';                       // MHD Restlaufzeit WA (5)Length
-            $csvString = $csvString . $customFields['custom_rieck_properties_MHD'] . ';';                      // Maximale Haltbarkeit (5)Length
-        }        
-        $csvString = $csvString . '0' . ';';                                   // Chargen Pflicht? (1)Length
-        $csvString = $csvString . $placeholder . ';';                         // S/N Erfassung WE? (1)Length
-        $csvString = $csvString . $placeholder . ';';                         // S/N Erfassung WA? (1)Length
-        $csvString = $csvString . $placeholder . ';';                               // Einzelpreis (7.4)Length
+            if(array_key_exists('custom_rieck_properties_MHD',$customFields))
+            {
+                $csvString = $csvString . '1' . ';';                              // MHD Pflicht? (1)Length
+            }
+            else
+            {
+                $csvString = $csvString . '0' . ';';                              // MHD Pflicht? (1)Length
+            }            
+            if(array_key_exists('custom_rieck_properties_MHD_WE',$customFields))
+            {
+                $csvString = $csvString . $customFields['custom_rieck_properties_MHD_WE'] . ';';                      // MHD Restlaufzeit, WE (5)Length
+            }
+            else
+            {$csvString = $csvString . ';';}
+            if(array_key_exists('custom_rieck_properties_MHD_WA',$customFields))
+            {
+                $csvString = $csvString . $customFields['custom_rieck_properties_MHD_WA'] . ';';                       // MHD Restlaufzeit WA (5)Length
+            }
+            else
+            {$csvString = $csvString . ';';}
+            if(array_key_exists('custom_rieck_properties_MHD',$customFields))
+            {
+                $csvString = $csvString . $customFields['custom_rieck_properties_MHD'] . ';';                      // Maximale Haltbarkeit (5)Length
+            }
+            else
+            {$csvString = $csvString . ';';}
+        }
+        else
+        {$csvString = $csvString . '0' . ';' . ';' . ';' . ';';}
+        $csvString = $csvString . '0' . ';';                                    // Chargen Pflicht? (1)Length
+        $csvString = $csvString . '0' . ';';                           // S/N Erfassung WE? (1)Length
+        $csvString = $csvString . '0' . ';';                           // S/N Erfassung WA? (1)Length
+        $csvString = $csvString . $placeholder . ';';                           // Einzelpreis (7.4)Length
         $csvString = $csvString . $placeholder . ';';                           // Zolltarifnummer (25)Length
-        $csvString = $csvString . $placeholder . ';';                             // Ursprungsland (3)Length
-        $csvString = $csvString . $this->getManufacturerName($product) . ';';                                // Hersteller (15)Length
-        $csvString = $csvString . $placeholder . ';';                                 // Bemerkung (78)Length
+        $csvString = $csvString . $placeholder . ';';                           // Ursprungsland (3)Length
+        $csvString = $csvString . $this->getManufacturerName($product) . ';';   // Hersteller (15)Length
+        $csvString = $csvString . $placeholder . ';';                           // Bemerkung (78)Length
         $csvString = $csvString . "\n";
         
         return $csvString;
@@ -119,15 +144,12 @@ class CSVFactory
         }
         return $translationEntity;
     }
-    private function getProductName(ProductEntity $product):string
+    private function getProductName(ProductTranslationEntity $translationEntity):string
     {//maxlength 30
-        $translationEntity = $this->getProductTranslation($product);
         return $translationEntity->getName();
     }
-    private function getProductCustomField(ProductEntity $product)
+    private function getProductCustomField(ProductTranslationEntity $translationEntity)
     {//maxlength 30
-        /** @var ProductTranslationEntity $translationEntity */
-        $translationEntity = $this->getProductTranslation($product);
         return $translationEntity->getCustomFields();
     }
     public function generateHeader(array $associativeArray, string $orderNumber): string

@@ -80,7 +80,12 @@ class OrderInterfaceController extends AbstractController
         {
             $csvString = $this->csvFactory->generateArticlebase($csvString, $product, $context);
         }
-        file_put_contents($this->todaysFolderPath . '/' . $this->companyID . '-' . 'synlabArticlebase.csv', $csvString);
+        $splitPath = explode('/',$this->todaysFolderPath);
+        $articlebasePath = $splitPath[0] . '/' . $splitPath[1] . '/' . $splitPath[2] . '/' . $splitPath[3] .  '/' . 'Articlebase/';
+        if (!file_exists($articlebasePath)) {
+            mkdir($articlebasePath, 0777, true);
+        }   
+        file_put_contents($articlebasePath . $this->companyID . '.' . 'Artikelstamm-' . $splitPath[5] . '.csv', $csvString);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 

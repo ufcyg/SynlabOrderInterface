@@ -17,11 +17,14 @@ class OrderInterfaceUtils
     private $folderRoot;
     /** @var string $todaysFolderPath */
     private $todaysFolderPath;
+    /** @var OrderInterfaceRepositoryContainer $repositoryContainer*/
+    private $repositoryContainer;
     
-    public function __construct()
+    public function __construct(OrderInterfaceRepositoryContainer $repositoryContainer)
     {
         $this->folderRoot = '../custom/plugins/SynlabOrderInterface/SubmittedOrders/';
         $this->todaysFolderPath = '';
+        $this->repositoryContainer = $repositoryContainer;
     }
     /// boolean checks
     public function newOrdersCk(EntityRepositoryInterface $orderRepository, Context $context): bool
@@ -179,6 +182,40 @@ class OrderInterfaceUtils
             {
                 return $orderDelivery->getId();
             }
+        }
+    }
+    public function getLanguageID(string $customerID, Context $context):string
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('id',$customerID));
+
+        /** @var EntityRepositoryInterface $customerEntity */
+        $customerRepository = $this->repositoryContainer->getCustomerRepository();
+        /** @var EntitySearchResult $customerSearchResult */
+        $customerSearchResult = $customerRepository->search($criteria,$context);
+        /** @var CustomerEntity $customer */
+        $customer = $customerSearchResult->first();
+        return $customer->getLanguageId();
+    }
+    public function getLanguageISOalpha2(string $languageID,Context $context):string
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('id', $languageID));
+        /** EntityRepositoryInterface $languageRepository */
+        $languageRepository = $this->repositoryContainer->getLanguageRepository();
+        /** @var LanguageEntity $languageEntity */
+        $languageEntity = $languageRepository->search($criteria,$context);
+        return $this->convertLanguageNameToISOalpha2($languageEntity->first()->getName());
+    }
+    private function convertLanguageNameToISOalpha2(string $languageName):string
+    {
+        switch ($languageName){
+            case 'English':
+                return 'EN';
+            case 'Deutsch':
+                return 'DE';
+            default:
+                return 'ERROR';
         }
     }
 }

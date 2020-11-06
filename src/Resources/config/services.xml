@@ -10,7 +10,7 @@
         </service>
 
         <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" public="true">
-        
+            <argument id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer" type="service" />
         </service>
 
         <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer" public="true">
@@ -20,7 +20,9 @@
             <argument id="product.repository" type="service" />
             <argument id="order_delivery.repository" type="service" />  
             <argument id="product_manufacturer_translation.repository" type="service" />  
-            <argument id="product_translation.repository" type="service" />  
+            <argument id="product_translation.repository" type="service" /> 
+            <argument id="customer.repository" type="service" />
+            <argument id="language.repository" type="service" />  
         </service>
 
         <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController" public="true">

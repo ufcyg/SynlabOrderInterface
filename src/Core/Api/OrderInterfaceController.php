@@ -2,6 +2,7 @@
 
 namespace SynlabOrderInterface\Core\Api;
 
+use Shopware\Core\Checkout\Customer\CustomerEntity;
 use Shopware\Core\Framework\Context;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
@@ -48,7 +49,7 @@ class OrderInterfaceController extends AbstractController
         $this->oiOrderServiceUtils = $oiOrderServiceUtils;
 
         $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
-        $this->csvFactory = new CSVFactory($this->companyID, $this->repositoryContainer);
+        $this->csvFactory = new CSVFactory($this->companyID, $this->repositoryContainer, $this->oiUtils);
         $this->todaysFolderPath;
     }
 
@@ -216,22 +217,27 @@ class OrderInterfaceController extends AbstractController
             $this->oiUtils->createOrderFolder($orderNumber,$folderPath);
 
             //customer eMail
-            /** @var OrderCustomerEntity $customerEntity */
-            $customerEntity = $order->getOrderCustomer();
-            $eMailAddress = $customerEntity->getEmail();
+            /** @var OrderCustomerEntity $orderCustomerEntity */
+            $orderCustomerEntity = $order->getOrderCustomer();
+            $eMailAddress = $orderCustomerEntity->getEmail();
             // deliveryaddress
             $exportData = $this->oiUtils->getDeliveryAddress($this->repositoryContainer->getOrderDeliveryAddressRepository(), $orderID, $eMailAddress, $context);// ordered products
             $orderedProducts = $this->oiUtils->getOrderedProducts($this->repositoryContainer->getLineItemsRepository(), $orderID, $context);
+            
+            $fileContent = '';
+            $orderContent = '';
             $i = 0;
             foreach($orderedProducts as $product)
             {
                 array_push($exportData, $product);
-                $fileContent = $this->csvFactory->generateDetails($exportData, $orderNumber, $i);
-                file_put_contents($folderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-' . $product->getPosition() . '-details.csv',$fileContent);    
+                $orderContent = $this->csvFactory->generateDetails($exportData, $orderNumber, $i, $orderContent, $context);   
                 $i++;
             }
-            $fileContent = $this->csvFactory->generateHeader($exportData, $orderNumber);
-            file_put_contents($folderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-header.csv',$fileContent);
+            
+            $fileContent = $this->csvFactory->generateHeader($exportData, $orderNumber, $fileContent, $orderCustomerEntity->getCustomerId(), $context);
+            $fileContent = $fileContent . $orderContent;
+            file_put_contents($folderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-order.csv',$fileContent);
         }
     }
+    
 }

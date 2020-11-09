@@ -196,38 +196,4 @@ class OrderInterfaceUtils
             }
         }
     }
-    public function getLanguageID(string $customerID, Context $context):string
-    {
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('id',$customerID));
-
-        /** @var EntityRepositoryInterface $customerEntity */
-        $customerRepository = $this->repositoryContainer->getCustomerRepository();
-        /** @var EntitySearchResult $customerSearchResult */
-        $customerSearchResult = $customerRepository->search($criteria,$context);
-        /** @var CustomerEntity $customer */
-        $customer = $customerSearchResult->first();
-        return $customer->getLanguageId();
-    }
-    public function getLanguageISOalpha2(string $languageID,Context $context):string
-    {
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('id', $languageID));
-        /** EntityRepositoryInterface $languageRepository */
-        $languageRepository = $this->repositoryContainer->getLanguageRepository();
-        /** @var LanguageEntity $languageEntity */
-        $languageEntity = $languageRepository->search($criteria,$context);
-        return $this->convertLanguageNameToISOalpha2($languageEntity->first()->getName());
-    }
-    private function convertLanguageNameToISOalpha2(string $languageName):string
-    {
-        switch ($languageName){
-            case 'English':
-                return 'EN';
-            case 'Deutsch':
-                return 'DE';
-            default:
-                return 'ERROR';
-        }
-    }
 }

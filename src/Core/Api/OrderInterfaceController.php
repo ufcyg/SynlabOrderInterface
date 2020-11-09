@@ -189,7 +189,7 @@ class OrderInterfaceController extends AbstractController
     private function writeFile(Context $context)
     {
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), false, $context); //TODO set to true
+        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), false, $context); //TODO set to true 
 
         if(count($entities) === 0){
             return;

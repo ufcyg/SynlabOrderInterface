@@ -248,7 +248,7 @@ class CSVFactory
     private function getOrderValue(array $associativeArray): string //7.4
     {
         $orderValue = 0;
-        for ($i = 0; $i < count($associativeArray)-13; $i++)
+        for ($i = 0; $i < count($associativeArray)-13; $i++) //hardcoded value is equivalent to amount of array entries in "$associativeArray" before products are added
         {
             $product = $associativeArray[$i];
             $orderValue += $this->properyAccessor->getValue($product, 'totalPrice');

@@ -24,6 +24,8 @@ class OrderInterfaceRepositoryContainer
     private $customerRepository;
     /** @var EntityRepositoryInterface $languageRepository */
     private $languageRepository;
+    /** @var EntityRepositoryInterface $countryRepository */
+    private $countryRepository;
 
     public function __construct(EntityRepositoryInterface $orderRepository,
                                 EntityRepositoryInterface $orderDeliveryAddressRepository,
@@ -33,7 +35,8 @@ class OrderInterfaceRepositoryContainer
                                 EntityRepositoryInterface $manufacturerTranslation,
                                 EntityRepositoryInterface $productTranslation,
                                 EntityRepositoryInterface $customerRepository,
-                                EntityRepositoryInterface $languageRepository
+                                EntityRepositoryInterface $languageRepository,
+                                EntityRepositoryInterface $countryRepository
 
     )
     {
@@ -46,6 +49,7 @@ class OrderInterfaceRepositoryContainer
         $this->productTranslation = $productTranslation;
         $this->customerRepository = $customerRepository;
         $this->languageRepository = $languageRepository;
+        $this->countryRepository = $countryRepository;
     }
 
     /** Get the value of orderRepository */
@@ -100,5 +104,11 @@ class OrderInterfaceRepositoryContainer
     public function getLanguageRepository()
     {
         return $this->languageRepository;
+    }
+
+    /** Get the value of countryRepository */ 
+    public function getCountryRepository()
+    {
+        return $this->countryRepository;
     }
 }

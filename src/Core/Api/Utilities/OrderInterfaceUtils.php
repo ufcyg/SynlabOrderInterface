@@ -4,12 +4,14 @@ namespace SynlabOrderInterface\Core\Api\Utilities;
 
 use DateInterval;
 use DateTime;
+use Shopware\Core\Checkout\Order\Aggregate\OrderAddress\OrderAddressEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\RangeFilter;
+use Shopware\Core\System\Country\CountryEntity;
 
 class OrderInterfaceUtils
 {
@@ -162,12 +164,22 @@ class OrderInterfaceUtils
             'zipCodeCustomer' => $customerAddressEntity->getZipcode(),
             'cityCustomer' => $customerAddressEntity->getCity(),
             'streetCustomer' => $customerAddressEntity->getStreet(),
+            'countryISOalpha2Customer' => $this->getCountryISOalpha2($customerAddressEntity->getCountryId()),
             'firstNameDelivery' => $deliverAddressEntity->getFirstName(),
             'lastNameDelivery' => $deliverAddressEntity->getLastName(),
             'zipCodeDelivery' => $deliverAddressEntity->getZipcode(),
             'cityDelivery' => $deliverAddressEntity->getCity(),
-            'streetDelivery' => $deliverAddressEntity->getStreet()
+            'streetDelivery' => $deliverAddressEntity->getStreet(),
+            'countryISOalpha2Delivery' => $this->getCountryISOalpha2($deliverAddressEntity->getCountryId())
         );
+    }
+    private function getCountryISOalpha2(string $countryID):string
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('id', $countryID));
+        /** @var CountryEntity $countryEntity */
+        $countryEntity = $this->repositoryContainer->getCountryRepository()->search($criteria,Context::createDefaultContext())->first();
+        return $countryEntity->getIso();
     }
 
     public function getDeliveryEntityID(EntityRepositoryInterface $orderDeliveryRepository, string $orderEntityID, Context $context): string

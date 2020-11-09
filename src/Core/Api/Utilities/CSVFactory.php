@@ -194,14 +194,14 @@ class CSVFactory
         $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[streetCustomer]'),45) . ';';      //Straße, Kunde 45
         $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[zipCodeCustomer]'),10) . ';';     //PLZ, Kunde 10
         $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[cityCustomer]'),35) . ';';        //Ort, Kunde 35
-        $csvString = $csvString . $this->truncateString($languageISOalpha2,3) . ';';                                                                          //Land, Kunde 3
+        $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[countryISOalpha2Customer]'),3) . ';';                                                                          //Land, Kunde 3
         $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[firstNameDelivery]'),35) . ';';   //Name 1, Lieferanschrift 35
         $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[lastNameDelivery]'),35) . ';';    //Name 2, Lieferanschrift 35
         $csvString = $csvString . $this->truncateString($placeholder,35) . ';';                                                                 //Name 3, Lieferanschrift 35
         $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[streetDelivery]'),45) . ';';      //Straße, Lieferanschrift 45
         $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[zipCodeDelivery]'),10) . ';';     //PLZ, Lieferanschrift 10
         $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[cityDelivery]'),35) . ';';        //Ort, Lieferanschrift 35
-        $csvString = $csvString . $this->truncateString($languageISOalpha2,3) . ';';                                                                          //Land, Lieferanschrift 3
+        $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[countryISOalpha2Delivery]'),3) . ';';                                                                          //Land, Lieferanschrift 3
         $csvString = $csvString . $this->truncateString($this->properyAccessor->getValue($associativeArray, '[eMail]'),55) . ';';               //Mailadresse, Lieferanschrift 55
         $csvString = $csvString . $this->truncateString($placeholder,20) . ';';                                                                 //Telefon, Lieferanschrift 20
         $csvString = $csvString . $this->truncateString($placeholder,8) . ';';                                                                  //Fixtermindatum 8
@@ -216,7 +216,7 @@ class CSVFactory
         $csvString = $csvString . $this->truncateString($placeholder,4) . ';';                                                                  //Versandart LFS 4
         $csvString = $csvString . $this->truncateString($placeholder,4) . ';';                                                                  //Servicecode LFS 4
         $csvString = $csvString . $this->truncateString($placeholder,6) . ';';                                                                  //Tour LFS 6
-        $csvString = $csvString . '1' . ';';                                                                                                    //Schnittstelle LFS 1
+        $csvString = $csvString . '1' . ';';                                 //                                                                   //Schnittstelle LFS 1
         $csvString = $csvString . $this->truncateString('02',2) . ';';                                                                          //Priorität 2
         $csvString = $csvString . "\n";
 
@@ -251,7 +251,7 @@ class CSVFactory
     private function getOrderValue(array $associativeArray): string //7.4
     {
         $orderValue = 0;
-        for ($i = 0; $i < count($associativeArray)-11; $i++)
+        for ($i = 0; $i < count($associativeArray)-13; $i++)
         {
             $product = $associativeArray[$i];
             $orderValue += $this->properyAccessor->getValue($product, 'totalPrice');

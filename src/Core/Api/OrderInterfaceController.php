@@ -2,7 +2,7 @@
 
 namespace SynlabOrderInterface\Core\Api;
 
-use Shopware\Core\Checkout\Customer\CustomerEntity;
+
 use Shopware\Core\Framework\Context;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
@@ -13,6 +13,7 @@ use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SynlabOrderInterface\Core\Api\Utilities\CSVFactory;
+use SynlabOrderInterface\Core\Api\Utilities\SFTPController;
 use SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils;
@@ -22,7 +23,8 @@ use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils;
  */
 class OrderInterfaceController extends AbstractController
 {
-    
+    /** @var SFTPController $sftpController */
+    private $sftpController;
     /** @var string */
     private $todaysFolderPath;
     /** @var CSVFactory $csvFactory */
@@ -51,6 +53,13 @@ class OrderInterfaceController extends AbstractController
         $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
         $this->csvFactory = new CSVFactory($this->companyID, $this->repositoryContainer, $this->oiUtils);
         $this->todaysFolderPath;
+        $ipAddress = $this->systemConfigService->get('SynlabOrderInterface.config.ipAddress');
+        $port = $this->systemConfigService->get('SynlabOrderInterface.config.port');
+        $username = $this->systemConfigService->get('SynlabOrderInterface.config.ftpUserName');
+        $password = $this->systemConfigService->get('SynlabOrderInterface.config.ftpPassword');
+        $homeDirectory = $this->systemConfigService->get('SynlabOrderInterface.config.homeDirectory');
+
+        $this->sftpController = new SFTPController($ipAddress, $port, $username, $password, $homeDirectory);
     }
 
     /**
@@ -86,7 +95,10 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($articlebasePath)) {
             mkdir($articlebasePath, 0777, true);
         }   
-        file_put_contents($articlebasePath . $this->companyID . '.' . 'Artikelstamm-' . $splitPath[5] . '.csv', $csvString);
+        $filename = $articlebasePath . $this->companyID . '.' . 'Artikelstamm-' . $splitPath[5] . '.csv';
+        file_put_contents($filename, $csvString);
+
+        $this->sendFile($filename, "/Artikel" . "/artikelstamm" . $this->oiUtils->createDateFromString('now') . ".csv");
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -236,8 +248,15 @@ class OrderInterfaceController extends AbstractController
             
             $fileContent = $this->csvFactory->generateHeader($exportData, $orderNumber, $fileContent, $orderCustomerEntity->getCustomerId(), $context);
             $fileContent = $fileContent . $orderContent;
-            file_put_contents($folderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-order.csv',$fileContent);
+            $filePath = $folderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-order.csv';
+            file_put_contents($filePath,$fileContent);
+            
+            $this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");
         }
+    }
+    private function sendFile(string $filePath, string $destinationPath)
+    {
+        $this->sftpController->pushFile($filePath, $destinationPath);
     }
     
 }

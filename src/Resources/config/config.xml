@@ -15,6 +15,16 @@
         </input-field>
 
         <input-field>
+            <name>homeDirectory</name>
+            <label>Remote FTP-Server Home Directory</label>
+            <label lang="de-DE">Startordner des entfernten FTP-Servers</label>          
+            <placeholder>/home/directory/</placeholder>
+            <placeholder lang="de-DE">/home/directory/</placeholder>
+            <helpText>Input the home directory of your ftp server</helpText>
+            <helpText lang="de-DE">Geben Sie den Startordner ihres ftp-Servers an.</helpText>
+        </input-field>
+
+        <input-field>
             <name>port</name>
             <label>Port to use for connection</label>
             <label lang="de-DE">Port für die Verbindung</label>          

@@ -24,6 +24,7 @@
             <argument id="customer.repository" type="service" />
             <argument id="language.repository" type="service" />  
             <argument id="country.repository" type="service" />  
+            <argument id="unit_translation.repository" type="service" />  
         </service>
 
         <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController" public="true">

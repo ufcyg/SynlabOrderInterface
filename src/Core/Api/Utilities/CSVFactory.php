@@ -6,8 +6,11 @@ use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Content\Product\Aggregate\ProductTranslation\ProductTranslationEntity;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
+use Shopware\Core\System\Unit\Aggregate\UnitTranslation\UnitTranslationEntity;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
 class CSVFactory
@@ -43,14 +46,14 @@ class CSVFactory
         $csvString = $csvString . $this->truncateString($placeholder,30) . ';';                                 // Artikelbezeichnung 2 (30)Length
         $csvString = $csvString . $this->truncateString($placeholder,30) . ';';                                 // Artikelbezeichnung 3 (30)Length
         $csvString = $csvString . $this->truncateString($placeholder,6) . ';';                                  // Warengruppe (6)Length
-        $csvString = $csvString . $this->truncateString($translationEntity->getPackUnit(),3) . ';';             // Basismengeneinheit* (3)Length
+        $csvString = $csvString . $this->truncateString($this->getUnit($product->getUnitId()),3) . ';';         // Basismengeneinheit* (3)Length
         $csvString = $csvString . $placeholder . ';';                                                           // Basismengeneinheit, Gewicht in KG, netto (9.5)Length
         $csvString = $csvString . $product->getWeight() . ';';                                                  // Basismengeneinheit, Gewicht in KG, brutto (9.5)Length
         $csvString = $csvString . $product->getLength() . ';';                                                  // Basismengeneinheit, Länge in mm (5.2)Length
         $csvString = $csvString . $product->getWidth() . ';';                                                   // Basismengeneinheit, Breite in mm (5.2)Length
         $csvString = $csvString . $product->getHeight() . ';';                                                  // Basismengeneinheit, Höhe in mm (5.2)Length
         $csvString = $csvString . $this->truncateString($placeholder,3) . ';';                                  // Verpackungseinheit (VE) Mengeneinheit (3)Length
-        $csvString = $csvString . $product->getPurchaseUnit() . ';';                                            // VE Menge (8.3)Length
+        $csvString = $csvString . $product->getMinPurchase() . ';';                                             // VE Menge (8.3)Length
         $csvString = $csvString . $placeholder . ';';                                                           // VE Mengeneinheit Gewicht in KG, netto (9.5)Length
         $csvString = $csvString . $placeholder . ';';                                                           // VE Mengeneinheit Gewicht in KG, brutto (9.5)Length
         $csvString = $csvString . $placeholder . ';';                                                           // VE Mengeneinheit, Länge in mm (5.2)Length
@@ -118,6 +121,19 @@ class CSVFactory
         return $csvString;
     }
 
+    private function getUnit(string $unitID):string
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('unitId', $unitID));
+        /** @var EntityRepositoryInterface $unitTranslationRepository */
+        $unitTranslationRepository = $this->repositoryContainer->getUnitTranslation();
+        /** @var EntitySearchResult $unitTranslationSearchResult */
+        $unitTranslationSearchResult = $unitTranslationRepository->search($criteria,Context::createDefaultContext());
+        /** @var UnitTranslationEntity $unitTranslation */
+        $unitTranslation = $unitTranslationSearchResult->first();
+        return $unitTranslation->getShortCode();
+    }
+
     private function truncateString($truncation,int $maxValue):string
     {
         if(is_int($truncation))
@@ -176,7 +192,7 @@ class CSVFactory
         $this->currentContext = $context;
         
         $placeholder = '';
-        $csvString = $csvString . $this->truncateString($this->companyID,30) . '.WEAvis.Kopf' . ';';                                                             //Kennung 30
+        $csvString = $csvString . $this->truncateString($this->companyID,30) . '.WAAvis.Kopf' . ';';                                                             //Kennung 30
         $csvString = $csvString . $this->truncateString($orderNumber,25) . ';';                                                                 //Auftragsnummer Kunde 25
         $csvString = $csvString . $this->truncateString($placeholder,8) . ';';                                                                  //Bereitstelldatum 8
         $csvString = $csvString . $this->truncateString($placeholder,6) . ';';                                                                  //Bereitstelluhrzeit 6

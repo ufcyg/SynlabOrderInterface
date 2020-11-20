@@ -67,6 +67,15 @@ class OrderInterfaceUtils
 
         return $timeStamp;
     }
+    public function createShortDateFromString(string $daytime): string
+    {
+        $timeStamp = new DateTime();
+        $timeStamp->add(DateInterval::createFromDateString($daytime));
+        $timeStamp = $timeStamp->format('Y-m-d_H-i-s_u');
+        $timeStamp = substr($timeStamp, 0, strlen($timeStamp) - 3);
+
+        return $timeStamp;
+    }
 
     public function createDateFolder()
     {

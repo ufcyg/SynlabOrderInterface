@@ -108,6 +108,7 @@ class CSVFactory
         }
         else
         {$csvString = $csvString . '0' . ';' . ';' . ';' . ';';}
+        
         $csvString = $csvString . '0' . ';';                                                                    // Chargen Pflicht? (1)Length
         $csvString = $csvString . '0' . ';';                                                                    // S/N Erfassung WE? (1)Length
         $csvString = $csvString . '0' . ';';                                                                    // S/N Erfassung WA? (1)Length
@@ -241,7 +242,7 @@ class CSVFactory
         /** @var OrderLineItemEntity $product */
         $product = $this->properyAccessor->getValue($associativeArray, $accessstring);
         $placeholder = '';
-        $csvString = $csvString . $this->truncateString($this->companyID,30) . '.WEAvis.Detail' . ';';      //Kennung 30
+        $csvString = $csvString . $this->truncateString($this->companyID,30) . '.WAAvis.Detail' . ';';      //Kennung 30
         $csvString = $csvString . $this->truncateString($orderNumber,25) . ';';                             //Auftragsnummer Kunde 25
         $csvString = $csvString . $this->truncateString($product->getPosition(),6) . ';';                   //Auftragspositionsnummer Kunde 6
         $csvString = $csvString . $this->truncateString($this->getArticleNumber($product),28) . ';';        //Artikelnummer 28
@@ -267,7 +268,7 @@ class CSVFactory
             $product = $associativeArray[$i];
             $orderValue += $this->properyAccessor->getValue($product, 'totalPrice');
         }
-        return strval($orderValue);
+        return str_replace('.',',',strval($orderValue));
     }
 
     private function getArticleNumber(OrderLineItemEntity $product): string

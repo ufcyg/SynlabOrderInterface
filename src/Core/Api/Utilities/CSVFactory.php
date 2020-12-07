@@ -274,7 +274,12 @@ class CSVFactory
     private function getArticleNumber(OrderLineItemEntity $product): string
     {
         $payload = $product->getPayload();
-        return $this->properyAccessor->getValue($payload, '[productNumber]');
+        $articleNumber = $this->properyAccessor->getValue($payload, '[productNumber]');
+        if (!is_string($articleNumber))
+        {
+            $articleNumber = '';
+        }
+        return $articleNumber;
     }
     
 }

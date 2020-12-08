@@ -257,7 +257,7 @@ class OrderInterfaceController extends AbstractController
             $filePath = $folderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-order.csv';
             file_put_contents($filePath,$fileContent);
             
-            #$this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");
+            $this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");
         }
     }
     private function sendFile(string $filePath, string $destinationPath)

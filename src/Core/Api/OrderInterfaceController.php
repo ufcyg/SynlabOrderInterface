@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
+use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SynlabOrderInterface\Core\Api\Utilities\CSVFactory;
@@ -239,8 +240,13 @@ class OrderInterfaceController extends AbstractController
             $fileContent = '';
             $orderContent = '';
             $i = 0;
+            /** @var OrderLineItemEntity $product */
             foreach($orderedProducts as $product)
             {
+                if ($product->getIdentifier() === "INTERNAL_DISCOUNT")
+                {
+                    continue;
+                }
                 array_push($exportData, $product);
                 $orderContent = $this->csvFactory->generateDetails($exportData, $orderNumber, $i, $orderContent, $context);   
                 $i++;
@@ -251,7 +257,7 @@ class OrderInterfaceController extends AbstractController
             $filePath = $folderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-order.csv';
             file_put_contents($filePath,$fileContent);
             
-            $this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");
+            #$this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");
         }
     }
     private function sendFile(string $filePath, string $destinationPath)

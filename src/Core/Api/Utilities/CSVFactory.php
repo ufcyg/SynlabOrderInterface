@@ -48,10 +48,10 @@ class CSVFactory
         $csvString = $csvString . $this->truncateString($placeholder,6) . ';';                                  // Warengruppe (6)Length
         $csvString = $csvString . $this->truncateString($this->getUnit($product->getUnitId()),3) . ';';         // Basismengeneinheit* (3)Length
         $csvString = $csvString . $placeholder . ';';                                                           // Basismengeneinheit, Gewicht in KG, netto (9.5)Length
-        $csvString = $csvString . $product->getWeight() . ';';                                                  // Basismengeneinheit, Gewicht in KG, brutto (9.5)Length
-        $csvString = $csvString . $product->getLength() . ';';                                                  // Basismengeneinheit, Länge in mm (5.2)Length
-        $csvString = $csvString . $product->getWidth() . ';';                                                   // Basismengeneinheit, Breite in mm (5.2)Length
-        $csvString = $csvString . $product->getHeight() . ';';                                                  // Basismengeneinheit, Höhe in mm (5.2)Length
+        $csvString = $csvString . str_replace('.',',',strval($product->getWeight())) . ';';                     // Basismengeneinheit, Gewicht in KG, brutto (9.5)Length
+        $csvString = $csvString . str_replace('.',',',strval($product->getLength())) . ';';                     // Basismengeneinheit, Länge in mm (5.2)Length
+        $csvString = $csvString . str_replace('.',',',strval($product->getWidth())) . ';';                      // Basismengeneinheit, Breite in mm (5.2)Length
+        $csvString = $csvString . str_replace('.',',',strval($product->getHeight())) . ';';                     // Basismengeneinheit, Höhe in mm (5.2)Length
         $csvString = $csvString . $this->truncateString($placeholder,3) . ';';                                  // Verpackungseinheit (VE) Mengeneinheit (3)Length
         $csvString = $csvString . $product->getMinPurchase() . ';';                                             // VE Menge (8.3)Length
         $csvString = $csvString . $placeholder . ';';                                                           // VE Mengeneinheit Gewicht in KG, netto (9.5)Length

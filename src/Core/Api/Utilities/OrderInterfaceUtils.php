@@ -24,7 +24,7 @@ class OrderInterfaceUtils
     
     public function __construct(OrderInterfaceRepositoryContainer $repositoryContainer)
     {
-        $this->folderRoot = '../custom/plugins/SynlabOrderInterface/SubmittedOrders/';
+        $this->folderRoot = '../custom/plugins/SynlabOrderInterface/InterfaceData/';
         $this->todaysFolderPath = '';
         $this->repositoryContainer = $repositoryContainer;
     }
@@ -76,32 +76,12 @@ class OrderInterfaceUtils
 
         return $timeStamp;
     }
-
-    public function createDateFolder()
-    {
-        $this->todaysFolderPath = $this->createTodaysFolderPath();
-        if (!file_exists($this->todaysFolderPath)) {
-            mkdir($this->todaysFolderPath, 0777, true);
-        }   
-    }
-    public function createTodaysFolderPath():string
+    public function createTodaysFolderPath($path):string
     {
         $timeStamp = new DateTime();
         $timeStamp = $timeStamp->format('d-m-Y');
          
-        return $this->folderRoot . $timeStamp;
-    }
-
-    public function createOrderFolder(string $orderNumber,&$folderPath)
-    {
-        if ($this->todaysFolderPath === '')
-        {
-            $this->createDateFolder();
-        }
-        if (!file_exists($this->todaysFolderPath . '/' . $orderNumber)) {
-            mkdir($this->todaysFolderPath . '/' . $orderNumber, 0777, true);
-        }
-        $folderPath = $this->todaysFolderPath;
+        return $this->folderRoot . $path . '/' . $timeStamp;
     }
 
     public function getProducts(EntityRepositoryInterface $productsRepository, Context $context): EntitySearchResult

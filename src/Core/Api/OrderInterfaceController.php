@@ -26,8 +26,8 @@ class OrderInterfaceController extends AbstractController
 {
     /** @var SFTPController $sftpController */
     private $sftpController;
-    /** @var string */
-    private $todaysFolderPath;
+    // /** @var string */
+    // private $todaysFolderPath;
     /** @var CSVFactory $csvFactory */
     private $csvFactory;
     /** @var SystemConfigService $systemConfigService */
@@ -53,7 +53,7 @@ class OrderInterfaceController extends AbstractController
 
         $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
         $this->csvFactory = new CSVFactory($this->companyID, $this->repositoryContainer, $this->oiUtils);
-        $this->todaysFolderPath;
+        // $this->todaysFolderPath;
         $ipAddress = $this->systemConfigService->get('SynlabOrderInterface.config.ipAddress');
         $port = $this->systemConfigService->get('SynlabOrderInterface.config.port');
         $username = $this->systemConfigService->get('SynlabOrderInterface.config.ftpUserName');
@@ -76,14 +76,70 @@ class OrderInterfaceController extends AbstractController
     }
 
     /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/pullRMWA", name="api.custom.synlab_order_interface.pullRMWA", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function pullRMWA(Context $context): Response
+    {
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA');
+        if (!file_exists($path)) {
+            mkdir($path, 0777, true);
+        } 
+        $this->sftpController->pullFile($path,'RM_WA');
+
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/pullRMWE", name="api.custom.synlab_order_interface.pullRMWE", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function pullRMWE(Context $context): Response
+    {
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WE');
+        if (!file_exists($path)) {
+            mkdir($path, 0777, true);
+        } 
+        $this->sftpController->pullFile($path,'RM_WE');
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/pullArticleError", name="api.custom.synlab_order_interface.pullArticleError", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function pullArticleError(Context $context): Response
+    {
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Artikel_Error');
+        if (!file_exists($path)) {
+            mkdir($path, 0777, true);
+        } 
+        $this->sftpController->pullFile($path,'Artikel_Error');
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/pullBestand", name="api.custom.synlab_order_interface.pullBestand", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function pullBestand(Context $context): Response
+    {
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand');
+        if (!file_exists($path)) {
+            mkdir($path, 0777, true);
+        } 
+        $this->sftpController->pullFile($path,'Bestand');
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+
+    /**
      * @Route("/api/v{version}/_action/synlab-order-interface/submitArticlebase", name="api.custom.synlab_order_interface.submitArticlebase", methods={"POST"})
      * @param Context $context;
      * @return Response
      */
     public function submitArticlebase(Context $context): Response
-    {
-        $this->oiUtils->createDateFolder();
-        $this->todaysFolderPath = $this->oiUtils->createTodaysFolderPath();        
+    { 
         $products = $this->oiUtils->getProducts($this->repositoryContainer->getProductsRepository(), $context);
 
         $csvString = '';
@@ -91,12 +147,12 @@ class OrderInterfaceController extends AbstractController
         {
             $csvString = $this->csvFactory->generateArticlebase($csvString, $product, $context);
         }
-        $splitPath = explode('/',$this->todaysFolderPath);
-        $articlebasePath = $splitPath[0] . '/' . $splitPath[1] . '/' . $splitPath[2] . '/' . $splitPath[3] .  '/' . 'Articlebase/';
+        $articlebasePath = $this->oiUtils->createTodaysFolderPath('Articlebase');
+        $splitPath = explode('/',$articlebasePath);
         if (!file_exists($articlebasePath)) {
             mkdir($articlebasePath, 0777, true);
         }   
-        $filename = $articlebasePath . $this->companyID . '.' . 'Artikelstamm-' . $splitPath[5] . '.csv';
+        $filename = $articlebasePath . '/' . $this->companyID . '.' . 'Artikelstamm-' . $splitPath[6] . '.csv';
         file_put_contents($filename, $csvString);
 
         $this->sendFile($filename, "/Artikel" . "/artikelstamm" . $this->oiUtils->createShortDateFromString('now') . ".csv");
@@ -208,7 +264,7 @@ class OrderInterfaceController extends AbstractController
             return;
         }
         $exportData = [];
-
+        $folderPath = $this->oiUtils->createTodaysFolderPath('SubmittedOrders/');
         /** @var OrderEntity $order */
         foreach($entities as $orderID => $order)
         {
@@ -225,9 +281,10 @@ class OrderInterfaceController extends AbstractController
             $orderID = $order->getId(); // orderID used to search inside other Repositories for corresponding data
 
             $orderNumber = $order->getOrderNumber();
-
-            $folderPath = '';
-            $this->oiUtils->createOrderFolder($orderNumber,$folderPath);
+            $folderPath = $folderPath . '/' . $orderNumber . '/';
+            if (!file_exists($folderPath)) {
+                mkdir($folderPath, 0777, true);
+            }
 
             //customer eMail
             /** @var OrderCustomerEntity $orderCustomerEntity */
@@ -254,7 +311,7 @@ class OrderInterfaceController extends AbstractController
             
             $fileContent = $this->csvFactory->generateHeader($exportData, $orderNumber, $fileContent, $orderCustomerEntity->getCustomerId(), $context);
             $fileContent = $fileContent . $orderContent;
-            $filePath = $folderPath . '/' . $orderNumber . '/' . $this->companyID . '-' . $orderNumber . '-order.csv';
+            $filePath = $folderPath . $this->companyID . '-' . $orderNumber . '-order.csv';
             file_put_contents($filePath,$fileContent);
             
             $this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");

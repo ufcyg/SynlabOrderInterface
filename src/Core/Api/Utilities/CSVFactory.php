@@ -193,7 +193,7 @@ class CSVFactory
         $this->currentContext = $context;
         
         $placeholder = '';
-        $csvString = $csvString . $this->truncateString($this->companyID,30) . '.WAAvis.Kopf' . ';';                                                             //Kennung 30
+        $csvString = $csvString . $this->truncateString($this->companyID,30) . '.WAAvis.Kopf' . ';';                                            //Kennung 30
         $csvString = $csvString . $this->truncateString($orderNumber,25) . ';';                                                                 //Auftragsnummer Kunde 25
         $csvString = $csvString . $this->truncateString($placeholder,8) . ';';                                                                  //Bereitstelldatum 8
         $csvString = $csvString . $this->truncateString($placeholder,6) . ';';                                                                  //Bereitstelluhrzeit 6

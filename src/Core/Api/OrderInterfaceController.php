@@ -11,7 +11,9 @@ use Symfony\Component\Routing\Annotation\Route;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
+use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SynlabOrderInterface\Core\Api\Utilities\CSVFactory;
 use SynlabOrderInterface\Core\Api\Utilities\SFTPController;
@@ -90,6 +92,105 @@ class OrderInterfaceController extends AbstractController
 
         return new Response('',Response::HTTP_NO_CONTENT);
     }
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/checkRMWA", name="api.custom.synlab_order_interface.checkRMWA", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function checkRMWA(Context $context): Response
+    {
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA') . '/';
+        if (file_exists($path)) {
+            $files = scandir($path);
+            for($i = 2; $i < count($files)-1; $i++)
+            {
+                $filename = $files[$i];
+                $filenameContents = explode('_',$filename);
+
+                /** @var Criteria $criteria */
+                $criteria = new Criteria();
+                $criteria->addFilter(new EqualsFilter('orderNumber', $filenameContents[3]));
+                /** @var EntityRepositoryInterface $orderRepositoryContainer */
+                $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
+                
+
+                if($filenameContents[1] === 'STATUS') // status of order data procession
+                {
+                    /** @var EntitySearchResult $entities */
+                    $orderEntitiy = $orderRepositoryContainer->search($criteria, $context);
+                    /** @var OrderEntity $order */
+                    $order = $orderEntitiy->first();
+
+                    if($order == null)
+                    {
+                        //TODO major error (received answer for not existant order)
+                        continue;
+                    }
+                    switch ($filenameContents[2])
+                    {
+                        case '003': // order cannot be changed (already packed, shipped, cancelled)
+                            //TODO
+                        break;
+                        case '005': // cannot be cancelled because never created
+                            //TODO
+                        break;
+                        case '006': // cannot be cancelled because already processed or cancelled
+                            //TODO
+                        break;
+                        case '007': // order changed
+                            //TODO
+                        break;
+                        case '009': // minor error in order
+                            //TODO
+                        break;
+                        case '010': // order sucessfully imported to rieck LFS
+                            if($this->oiOrderServiceUtils->orderStateIsProcessable($order))
+                            {
+                                $this->oiOrderServiceUtils->updateOrderStatus($order->getId(), 'process');
+                            }
+                        break;
+                        case '040': // order packaging started, order cannot be changed anymore
+                            if($this->oiOrderServiceUtils->orderStateIsCompletable($order))
+                            {
+                                $this->oiOrderServiceUtils->updateOrderStatus($order->getId(), 'complete');
+                            }
+                        break;
+                        case '999': // major error (file doesn't meet the expectations, e.g. unfitting fieldlengths, fieldformats, missing necessary fields)
+                            //TODO
+                        break;
+                        default:
+                        break;
+                    }
+                    continue;
+                }
+                else if ($filenameContents[1] === 'WAK') // Packende / end of packing
+                {
+                    $filecontents = file_get_contents($path . $filename);
+                    $fileContentsByLine = explode(PHP_EOL,$filecontents);
+                    $headContents = explode(';',$fileContentsByLine[0]);
+                }
+                else if ($filenameContents[1] === 'STORNO') // cancellation(confirmation) by rieck
+                {
+
+                }
+                else if ($filenameContents[1] === 'VLE') // packages loaded
+                {
+                    $filecontents = file_get_contents($path . $filename);
+                    $fileContentsByLine = explode(PHP_EOL,$filecontents);
+                    $headContents = explode(';',$fileContentsByLine[0]);
+                }
+                
+            }
+        } 
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+
+
+
+
+
+
+
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/pullRMWE", name="api.custom.synlab_order_interface.pullRMWE", methods={"POST"})
      * @param Context $context;
@@ -272,8 +373,7 @@ class OrderInterfaceController extends AbstractController
             {
                 continue;
             }
-            $this->oiOrderServiceUtils->updateOrderStatus($orderID, 'process');
-            $this->oiOrderServiceUtils->updateOrderStatus($orderID, 'complete');
+            
             
             // init exportVar
             $exportData = [];

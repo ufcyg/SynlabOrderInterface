@@ -75,8 +75,8 @@ class SFTPController
                     {
                         $stream = fopen('ssh2.sftp://' . intval($sftp) . $this->homeDirectory . $remoteDir . '/' . $file, 'r');
                         file_put_contents($localDir . '/' . $file,$stream);
-
-                        ssh2_sftp_unlink($sftp, $this->homeDirectory . $remoteDir . '/' . $file);
+                        //this deletes the remote file, this is required by rieck
+                        // ssh2_sftp_unlink($sftp, $this->homeDirectory . $remoteDir . '/' . $file);
                     }
                 }
             }

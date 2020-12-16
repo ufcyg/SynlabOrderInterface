@@ -2,6 +2,7 @@
 
 namespace SynlabOrderInterface\Core\Api\Utilities;
 
+use Shopware\Core\Checkout\Order\Aggregate\OrderDelivery\OrderDeliveryEntity;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Checkout\Order\SalesChannel\OrderService;
 use Shopware\Core\Framework\Context;
@@ -19,16 +20,11 @@ class OIOrderServiceUtils
 
     //process, complete, cancel, reopen
     public function updateOrderStatus(string $entityID, $transition)
-    {
+    {   
+        
+
         $this->orderService->orderStateTransition($entityID, $transition, new ParameterBag([]),Context::createDefaultContext());
     }
-    //ship, ship_partially, retour, retour_partially, cancel, reopen
-    public function updateOrderDeliveryStatus(string $entityID, string $transition)
-    {
-        $this->orderService->orderDeliveryStateTransition($entityID, $transition, new ParameterBag([]),Context::createDefaultContext());
-    }
-
-
     ///state transitions
     //process, complete, cancel, reopen
     public function orderStateIsReopenable(OrderEntity $order): bool
@@ -75,6 +71,46 @@ class OIOrderServiceUtils
             case 'Done':
                 return false;
         }
+        return true;
+    }
+
+    //ship, ship_partially, retour, retour_partially, cancel, reopen
+    public function updateOrderDeliveryStatus(OrderDeliveryEntity $orderDelivery,string $entityID, string $transition): bool
+    {
+        switch ($orderDelivery->getStateMachineState()->getName())
+        {
+            case "Open":
+                if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'ship') == 0 || strcmp($transition,'ship_partially') == 0))
+                {
+                    return false;
+                }
+            break;
+            case "Shipped":
+                if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'retour') == 0 || strcmp($transition,'retour_partially') == 0))
+                {
+                    return false;
+                }
+            break;
+            case "Shipped (partially)": 
+                if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'retour') == 0 || strcmp($transition,'retour_partially') == 0 || strcmp($transition,'ship') == 0))
+                {
+                    return false;
+                }
+            break;
+            case "Returned (partially)":
+                return false;
+            break;
+            case "Returned":
+                return false;
+            break;
+            case "Cancelled":
+                if(!(strcmp($transition,'reopen') == 0))
+                {
+                    return false;
+                }
+            break;
+        }
+        $this->orderService->orderDeliveryStateTransition($entityID, $transition, new ParameterBag([]),Context::createDefaultContext());
         return true;
     }
 }

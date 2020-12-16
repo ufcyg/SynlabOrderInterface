@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Checkout\Order\Aggregate\OrderCustomer\OrderCustomerEntity;
+use Shopware\Core\Checkout\Order\Aggregate\OrderDelivery\OrderDeliveryEntity;
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
@@ -107,15 +108,13 @@ class OrderInterfaceController extends AbstractController
                 $filename = $files[$i];
                 $filenameContents = explode('_',$filename);
 
-                /** @var Criteria $criteria */
-                $criteria = new Criteria();
-                $criteria->addFilter(new EqualsFilter('orderNumber', $filenameContents[3]));
-                /** @var EntityRepositoryInterface $orderRepositoryContainer */
-                $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
-                
-
                 if($filenameContents[1] === 'STATUS') // status of order data procession
                 {
+                    /** @var Criteria $criteria */
+                    $criteria = new Criteria();
+                    $criteria->addFilter(new EqualsFilter('orderNumber', $filenameContents[3]));
+                    /** @var EntityRepositoryInterface $orderRepositoryContainer */
+                    $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
                     /** @var EntitySearchResult $entities */
                     $orderEntitiy = $orderRepositoryContainer->search($criteria, $context);
                     /** @var OrderEntity $order */
@@ -175,9 +174,43 @@ class OrderInterfaceController extends AbstractController
                 }
                 else if ($filenameContents[1] === 'VLE') // packages loaded
                 {
+                    /** @var Criteria $criteria */
+                    $criteria = new Criteria();
+                    $criteria->addFilter(new EqualsFilter('orderNumber', $filenameContents[2]));
+                    /** @var EntityRepositoryInterface $orderRepositoryContainer */
+                    $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
+                    /** @var EntitySearchResult $entities */
+                    $orderEntities = $orderRepositoryContainer->search($criteria, $context);
+                    /** @var OrderEntity $order */
+                    $order = $orderEntities->first();
+
+                    /** @var string $orderDelivery */
+                    $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
+                    
+                    /** @var Criteria $criteria */
+                    $criteria = new Criteria();
+                    $criteria->addFilter(new EqualsFilter('id', $orderDeliveryID));
+                    /** @var EntityRepositoryInterface $orderRepositoryContainer */
+                    $orderDeliveryRepositoryContainer = $this->repositoryContainer->getOrderDeliveryRepository();
+                    /** @var EntitySearchResult $entities */
+                    $orderDeliveryEntities = $orderDeliveryRepositoryContainer->search($criteria, $context);
+                    /** @var OrderDeliveryEntity $orderDelivery */
+                    $orderDelivery = $orderDeliveryEntities->first();
+                    
+                    
                     $filecontents = file_get_contents($path . $filename);
                     $fileContentsByLine = explode(PHP_EOL,$filecontents);
                     $headContents = explode(';',$fileContentsByLine[0]);
+
+
+                    // if($this->oiOrderServiceUtils->orderDeliveryStateIsShipable($orderDelivery))
+                    // {
+                    //     $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDeliveryID, 'ship');
+                    // }
+                    // if($this->oiOrderServiceUtils->orderDeliveryStateIsRetourable($orderDelivery))
+                    // {
+                    //     $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDeliveryID, 'retour');
+                    // }
                 }
                 
             }
@@ -185,8 +218,72 @@ class OrderInterfaceController extends AbstractController
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/modifyShipmentStatus", name="api.custom.synlab_order_interface.modifyShipmentStatus", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function modifyShipmentStatus(Context $context): Response
+    {
+        /** @var Criteria $criteria */
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('orderNumber', '10079'));
+        /** @var EntityRepositoryInterface $orderRepositoryContainer */
+        $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
+        /** @var EntitySearchResult $entities */
+        $orderEntities = $orderRepositoryContainer->search($criteria, $context);
+        /** @var OrderEntity $order */
+        $order = $orderEntities->first();
+        /** @var string $orderDelivery */
+        $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
+                    
+        /** @var Criteria $criteria */
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('id', $orderDeliveryID));
+        /** @var EntityRepositoryInterface $orderRepositoryContainer */
+        $orderDeliveryRepositoryContainer = $this->repositoryContainer->getOrderDeliveryRepository();
+        /** @var EntitySearchResult $entities */
+        $orderDeliveryEntities = $orderDeliveryRepositoryContainer->search($criteria, $context);
+        /** @var OrderDeliveryEntity $orderDelivery */
+        $orderDelivery = $orderDeliveryEntities->first();
 
+        $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'ship_partially');
 
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/reopenShipmentStatus", name="api.custom.synlab_order_interface.reopenShipmentStatus", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function reopenShipmentStatus(Context $context): Response
+    {
+        /** @var Criteria $criteria */
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('orderNumber', '10079'));
+        /** @var EntityRepositoryInterface $orderRepositoryContainer */
+        $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
+        /** @var EntitySearchResult $entities */
+        $orderEntities = $orderRepositoryContainer->search($criteria, $context);
+        /** @var OrderEntity $order */
+        $order = $orderEntities->first();
+        /** @var string $orderDelivery */
+        $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
+             
+        /** @var Criteria $criteria */
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('id', $orderDeliveryID));
+        /** @var EntityRepositoryInterface $orderRepositoryContainer */
+        $orderDeliveryRepositoryContainer = $this->repositoryContainer->getOrderDeliveryRepository();
+        /** @var EntitySearchResult $entities */
+        $orderDeliveryEntities = $orderDeliveryRepositoryContainer->search($criteria, $context);
+        /** @var OrderDeliveryEntity $orderDelivery */
+        $orderDelivery = $orderDeliveryEntities->first();
+
+        $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'reopen');
+
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
 
 
 

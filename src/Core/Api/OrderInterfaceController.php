@@ -197,106 +197,14 @@ class OrderInterfaceController extends AbstractController
                     $headContents = explode(';',$fileContentsByLine[0]);
 
 
-                    // if($this->oiOrderServiceUtils->orderDeliveryStateIsShipable($orderDelivery))
-                    // {
-                    //     $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDeliveryID, 'ship');
-                    // }
-                    // if($this->oiOrderServiceUtils->orderDeliveryStateIsRetourable($orderDelivery))
-                    // {
-                    //     $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDeliveryID, 'retour');
-                    // }
+                    
+                    $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'ship');
                 }
                 
             }
         } 
         return new Response('',Response::HTTP_NO_CONTENT);
     }
-
-    /**
-     * @Route("/api/v{version}/_action/synlab-order-interface/modifyShipmentStatus", name="api.custom.synlab_order_interface.modifyShipmentStatus", methods={"POST"})
-     * @param Context $context;
-     * @return Response
-     */
-    public function modifyShipmentStatus(Context $context): Response
-    {
-        /** @var Criteria $criteria */
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('orderNumber', '10079'));
-        /** @var EntityRepositoryInterface $orderRepositoryContainer */
-        $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
-        /** @var EntitySearchResult $entities */
-        $orderEntities = $orderRepositoryContainer->search($criteria, $context);
-        /** @var OrderEntity $order */
-        $order = $orderEntities->first();
-        /** @var string $orderDelivery */
-        // $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
-             
-        $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'complete');
-
-        // /** @var Criteria $criteria */
-        // $criteria = new Criteria();
-        // $criteria->addFilter(new EqualsFilter('orderNumber', '10079'));
-        // /** @var EntityRepositoryInterface $orderRepositoryContainer */
-        // $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
-        // /** @var EntitySearchResult $entities */
-        // $orderEntities = $orderRepositoryContainer->search($criteria, $context);
-        // /** @var OrderEntity $order */
-        // $order = $orderEntities->first();
-        // /** @var string $orderDelivery */
-        // $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
-                    
-        // /** @var Criteria $criteria */
-        // $criteria = new Criteria();
-        // $criteria->addFilter(new EqualsFilter('id', $orderDeliveryID));
-        // /** @var EntityRepositoryInterface $orderRepositoryContainer */
-        // $orderDeliveryRepositoryContainer = $this->repositoryContainer->getOrderDeliveryRepository();
-        // /** @var EntitySearchResult $entities */
-        // $orderDeliveryEntities = $orderDeliveryRepositoryContainer->search($criteria, $context);
-        // /** @var OrderDeliveryEntity $orderDelivery */
-        // $orderDelivery = $orderDeliveryEntities->first();
-
-        // $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'ship_partially');
-
-        return new Response('',Response::HTTP_NO_CONTENT);
-    }
-    /**
-     * @Route("/api/v{version}/_action/synlab-order-interface/reopenShipmentStatus", name="api.custom.synlab_order_interface.reopenShipmentStatus", methods={"POST"})
-     * @param Context $context;
-     * @return Response
-     */
-    public function reopenShipmentStatus(Context $context): Response
-    {
-        /** @var Criteria $criteria */
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('orderNumber', '10079'));
-        /** @var EntityRepositoryInterface $orderRepositoryContainer */
-        $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
-        /** @var EntitySearchResult $entities */
-        $orderEntities = $orderRepositoryContainer->search($criteria, $context);
-        /** @var OrderEntity $order */
-        $order = $orderEntities->first();
-        /** @var string $orderDelivery */
-        // $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
-             
-        $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'reopen');
-
-        // /** @var Criteria $criteria */
-        // $criteria = new Criteria();
-        // $criteria->addFilter(new EqualsFilter('id', $orderDeliveryID));
-        // /** @var EntityRepositoryInterface $orderRepositoryContainer */
-        // $orderDeliveryRepositoryContainer = $this->repositoryContainer->getOrderDeliveryRepository();
-        // /** @var EntitySearchResult $entities */
-        // $orderDeliveryEntities = $orderDeliveryRepositoryContainer->search($criteria, $context);
-        // /** @var OrderDeliveryEntity $orderDelivery */
-        // $orderDelivery = $orderDeliveryEntities->first();
-
-        // $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'reopen');
-
-        return new Response('',Response::HTTP_NO_CONTENT);
-    }
-
-
-
 
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/pullRMWE", name="api.custom.synlab_order_interface.pullRMWE", methods={"POST"})

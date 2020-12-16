@@ -143,16 +143,10 @@ class OrderInterfaceController extends AbstractController
                             //TODO
                         break;
                         case '010': // order sucessfully imported to rieck LFS
-                            if($this->oiOrderServiceUtils->orderStateIsProcessable($order))
-                            {
-                                $this->oiOrderServiceUtils->updateOrderStatus($order->getId(), 'process');
-                            }
+                            $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'process');
                         break;
                         case '040': // order packaging started, order cannot be changed anymore
-                            if($this->oiOrderServiceUtils->orderStateIsCompletable($order))
-                            {
-                                $this->oiOrderServiceUtils->updateOrderStatus($order->getId(), 'complete');
-                            }
+                            $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'complete');
                         break;
                         case '999': // major error (file doesn't meet the expectations, e.g. unfitting fieldlengths, fieldformats, missing necessary fields)
                             //TODO
@@ -235,19 +229,33 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         $order = $orderEntities->first();
         /** @var string $orderDelivery */
-        $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
-                    
-        /** @var Criteria $criteria */
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('id', $orderDeliveryID));
-        /** @var EntityRepositoryInterface $orderRepositoryContainer */
-        $orderDeliveryRepositoryContainer = $this->repositoryContainer->getOrderDeliveryRepository();
-        /** @var EntitySearchResult $entities */
-        $orderDeliveryEntities = $orderDeliveryRepositoryContainer->search($criteria, $context);
-        /** @var OrderDeliveryEntity $orderDelivery */
-        $orderDelivery = $orderDeliveryEntities->first();
+        // $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
+             
+        $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'complete');
 
-        $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'ship_partially');
+        // /** @var Criteria $criteria */
+        // $criteria = new Criteria();
+        // $criteria->addFilter(new EqualsFilter('orderNumber', '10079'));
+        // /** @var EntityRepositoryInterface $orderRepositoryContainer */
+        // $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
+        // /** @var EntitySearchResult $entities */
+        // $orderEntities = $orderRepositoryContainer->search($criteria, $context);
+        // /** @var OrderEntity $order */
+        // $order = $orderEntities->first();
+        // /** @var string $orderDelivery */
+        // $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
+                    
+        // /** @var Criteria $criteria */
+        // $criteria = new Criteria();
+        // $criteria->addFilter(new EqualsFilter('id', $orderDeliveryID));
+        // /** @var EntityRepositoryInterface $orderRepositoryContainer */
+        // $orderDeliveryRepositoryContainer = $this->repositoryContainer->getOrderDeliveryRepository();
+        // /** @var EntitySearchResult $entities */
+        // $orderDeliveryEntities = $orderDeliveryRepositoryContainer->search($criteria, $context);
+        // /** @var OrderDeliveryEntity $orderDelivery */
+        // $orderDelivery = $orderDeliveryEntities->first();
+
+        // $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'ship_partially');
 
         return new Response('',Response::HTTP_NO_CONTENT);
     }
@@ -268,19 +276,21 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         $order = $orderEntities->first();
         /** @var string $orderDelivery */
-        $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
+        // $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
              
-        /** @var Criteria $criteria */
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('id', $orderDeliveryID));
-        /** @var EntityRepositoryInterface $orderRepositoryContainer */
-        $orderDeliveryRepositoryContainer = $this->repositoryContainer->getOrderDeliveryRepository();
-        /** @var EntitySearchResult $entities */
-        $orderDeliveryEntities = $orderDeliveryRepositoryContainer->search($criteria, $context);
-        /** @var OrderDeliveryEntity $orderDelivery */
-        $orderDelivery = $orderDeliveryEntities->first();
+        $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'reopen');
 
-        $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'reopen');
+        // /** @var Criteria $criteria */
+        // $criteria = new Criteria();
+        // $criteria->addFilter(new EqualsFilter('id', $orderDeliveryID));
+        // /** @var EntityRepositoryInterface $orderRepositoryContainer */
+        // $orderDeliveryRepositoryContainer = $this->repositoryContainer->getOrderDeliveryRepository();
+        // /** @var EntitySearchResult $entities */
+        // $orderDeliveryEntities = $orderDeliveryRepositoryContainer->search($criteria, $context);
+        // /** @var OrderDeliveryEntity $orderDelivery */
+        // $orderDelivery = $orderDeliveryEntities->first();
+
+        // $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'reopen');
 
         return new Response('',Response::HTTP_NO_CONTENT);
     }
@@ -373,10 +383,7 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         foreach ($entities as $orderID => $order) 
         {
-            if($this->oiOrderServiceUtils->orderStateIsReopenable($order))
-            {
-                $this->oiOrderServiceUtils->updateOrderStatus($orderID, 'reopen');
-            }
+            $this->oiOrderServiceUtils->updateOrderStatus($order, $orderID, 'reopen');
         }
         return new Response('',Response::HTTP_NO_CONTENT);
     }
@@ -397,10 +404,7 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         foreach ($entities as $orderID => $order) 
         {
-            if($this->oiOrderServiceUtils->orderStateIsProcessable($order))
-            {
-                $this->oiOrderServiceUtils->updateOrderStatus($orderID, 'process');
-            }
+            $this->oiOrderServiceUtils->updateOrderStatus($order, $orderID, 'process');
         }
         return new Response('',Response::HTTP_NO_CONTENT);
     }
@@ -421,10 +425,7 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         foreach ($entities as $orderID => $order) 
         {
-            if($this->oiOrderServiceUtils->orderStateIsCompletable($order))
-            {
-                $this->oiOrderServiceUtils->updateOrderStatus($orderID, 'complete');
-            }
+            $this->oiOrderServiceUtils->updateOrderStatus($order, $orderID, 'complete');
         }
         return new Response('',Response::HTTP_NO_CONTENT);
     }
@@ -445,10 +446,7 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         foreach ($entities as $orderID => $order) 
         {
-            if($this->oiOrderServiceUtils->orderStateIsCancelable($order))
-            {
-                $this->oiOrderServiceUtils->updateOrderStatus($orderID, 'cancel');
-            }
+            $this->oiOrderServiceUtils->updateOrderStatus($order, $orderID, 'cancel');
         }
         return new Response('',Response::HTTP_NO_CONTENT);
     }

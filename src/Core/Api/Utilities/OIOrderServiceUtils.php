@@ -19,58 +19,37 @@ class OIOrderServiceUtils
     }
 
     //process, complete, cancel, reopen
-    public function updateOrderStatus(string $entityID, $transition)
+    public function updateOrderStatus(OrderEntity $order, string $entityID, $transition)
     {   
-        
-
+        $stateName = $order->getStateMachineState()->getName();
+        switch ($stateName)
+        {
+            case "Open":
+                if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'process') == 0))
+                {
+                    return false;
+                }
+            break;
+            case "In progress":
+                if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'complete') == 0))
+                {
+                    return false;
+                }
+            break;
+            case "Done": 
+                if(!(strcmp($transition,'reopen') == 0))
+                {
+                    return false;
+                }
+            break;
+            case "Cancelled":
+                if(!(strcmp($transition,'reopen') == 0))
+                {
+                    return false;
+                }
+            break;
+        }
         $this->orderService->orderStateTransition($entityID, $transition, new ParameterBag([]),Context::createDefaultContext());
-    }
-    ///state transitions
-    //process, complete, cancel, reopen
-    public function orderStateIsReopenable(OrderEntity $order): bool
-    {
-        $stateName = $order->getStateMachineState()->getName();
-        switch ($stateName) {
-            case 'Open':
-                return false;
-            case 'In progress':
-                return false;
-        }
-        return true;
-    }
-    public function orderStateIsProcessable(OrderEntity $order): bool
-    {
-        $stateName = $order->getStateMachineState()->getName();
-        switch ($stateName) {
-            case 'In progress':
-                return false;
-            case 'Done':
-                return false;
-            case 'Cancelled':
-                return false;
-        }
-        return true;
-    }
-    public function orderStateIsCompletable(OrderEntity $order): bool
-    {
-        $stateName = $order->getStateMachineState()->getName();
-        switch ($stateName) {
-            case 'Open':
-                return false;
-            case 'Done':
-                return false;
-            case 'Cancelled':
-                return false;
-        }
-        return true;
-    }
-    public function orderStateIsCancelable(OrderEntity $order): bool
-    {
-        $stateName = $order->getStateMachineState()->getName();
-        switch ($stateName) {
-            case 'Done':
-                return false;
-        }
         return true;
     }
 

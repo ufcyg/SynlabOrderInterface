@@ -37,7 +37,7 @@ class ParcelTrackingDefinition extends EntityDefinition
             (new IdField('id', 'id'))->addFlags(new Required(), new PrimaryKey()),
             (new StringField('order_id', 'orderId'))->addFlags(new Required()),
             (new StringField('service', 'service'))->addFlags(new Required()),
-            (new IntField('position', 'position'))->addFlags(new Required()),
+            (new StringField('position', 'position'))->addFlags(new Required()),
             (new StringField('tracking_number', 'trackingNumber'))->addFlags(new Required())
         ]);
     }

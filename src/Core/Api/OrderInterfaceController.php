@@ -295,16 +295,15 @@ class OrderInterfaceController extends AbstractController
                     {
                         $lineContents = explode(';', $fileContentsByLine[$j]);
 
-                        $trackingData = [
+                        $trackingData[] = [
                             'id' => Uuid::randomHex(),
-                            'order_id' => $order->getId(),
+                            'orderId' => strval($order->getId()),
                             'service' => $headContents[4],
                             'position' => $lineContents[2],
-                            'tracking_number' => $lineContents[9]
+                            'trackingNumber' => $lineContents[9]
                         ];
-                        $this->repositoryContainer->getParcelTracking()->create($trackingData, $context);
                     }
-                    
+                    $this->repositoryContainer->getParcelTracking()->create($trackingData, $context);
                     $stateChanged = $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'ship');
                 }
                 

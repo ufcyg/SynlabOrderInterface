@@ -23,27 +23,12 @@ class ParcelTrackingDefinition extends EntityDefinition
 
     protected function defineFields(): FieldCollection
     {
-
-        /*
-        $connection->executeUpdate('
-            CREATE TABLE IF NOT EXISTS `as_parcel_tracking` (
-              `id` BINARY(16) NOT NULL,
-              `order_id` BINARY(16) NOT NULL,
-              `service` VARCHAR(4) NOT NULL,
-              `position` VARCHAR(6) NOT NULL,
-              `trackingnumber` VARCHAR(46) NOT NULL,
-              `created_at` DATETIME(3) NOT NULL,
-              `updated_at` DATETIME(3) NULL,
-              PRIMARY KEY (`id`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        ');
-        */
         return new FieldCollection([
             (new IdField('id', 'id'))->addFlags(new Required(), new PrimaryKey()),
             (new FkField('order_id', 'orderId', OrderDefinition::class))->addFlags(new Required()),
             (new StringField('service', 'service'))->addFlags(new Required()),
             (new IntField('position', 'position'))->addFlags(new Required()),
-            (new StringField('trackingnumber', 'trackingnumber'))->addFlags(new Required())
+            (new StringField('tracking_number', 'trackingNumber'))->addFlags(new Required())
         ]);
     }
 }

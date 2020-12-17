@@ -2,6 +2,7 @@
 
 namespace SynlabOrderInterface;
 
+use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Plugin\Context\UninstallContext;
 use Shopware\Core\Framework\Plugin\Context\InstallContext;
 use Shopware\Core\Framework\Plugin\Context\UpdateContext;
@@ -96,6 +97,11 @@ class SynlabOrderInterface extends Plugin
             }
         }
         rmdir($dir);
+
+        $connection = $this->container->get(Connection::class);
+
+        $connection->executeUpdate('DROP TABLE IF EXISTS `as_parcel_tracking`');
+
         parent::uninstall($context);
     }
 }

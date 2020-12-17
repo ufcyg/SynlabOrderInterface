@@ -5,6 +5,10 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
+        <service id="SynlabOrderInterface\Core\Content\ParcelTracking\ParcelTrackingDefinition">
+            <tag name="shopware.entity.definition" entity="as_parcel_tracking" />
+        </service>
+
         <service id="SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils" public="true">      
             <argument type="service" id="Shopware\Core\Checkout\Order\SalesChannel\OrderService" />
         </service>
@@ -25,6 +29,7 @@
             <argument id="language.repository" type="service" />  
             <argument id="country.repository" type="service" />  
             <argument id="unit_translation.repository" type="service" />  
+            <argument id="as_parcel_tracking.repository" type="service" />  
         </service>
 
         <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController" public="true">

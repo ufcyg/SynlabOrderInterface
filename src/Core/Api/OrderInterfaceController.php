@@ -15,6 +15,7 @@ use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
+use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SynlabOrderInterface\Core\Api\Utilities\CSVFactory;
 use SynlabOrderInterface\Core\Api\Utilities\SFTPController;
@@ -290,9 +291,21 @@ class OrderInterfaceController extends AbstractController
                     $fileContentsByLine = explode(PHP_EOL,$filecontents);
                     $headContents = explode(';',$fileContentsByLine[0]);
 
+                    for ($j = 1; $j < count($fileContentsByLine)-1; $j++)
+                    {
+                        $lineContents = explode(';', $fileContentsByLine[$j]);
 
+                        $trackingData = [
+                            'id' => Uuid::randomHex(),
+                            'order_id' => $order->getId(),
+                            'service' => $headContents[4],
+                            'position' => $lineContents[2],
+                            'tracking_number' => $lineContents[9]
+                        ];
+                        $this->repositoryContainer->getParcelTracking()->create($trackingData, $context);
+                    }
                     
-                    $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'ship');
+                    $stateChanged = $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'ship');
                 }
                 
             }

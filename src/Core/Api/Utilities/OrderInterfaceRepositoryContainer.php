@@ -28,6 +28,8 @@ class OrderInterfaceRepositoryContainer
     private $countryRepository;
     /** @var EntityRepositoryInterface $unitTranslation */
     private $unitTranslation;
+    /** @var EntityRepositoryInterface $parcelTracking */
+    private $parcelTracking;
 
     public function __construct(EntityRepositoryInterface $orderRepository,
                                 EntityRepositoryInterface $orderDeliveryAddressRepository,
@@ -39,7 +41,8 @@ class OrderInterfaceRepositoryContainer
                                 EntityRepositoryInterface $customerRepository,
                                 EntityRepositoryInterface $languageRepository,
                                 EntityRepositoryInterface $countryRepository,
-                                EntityRepositoryInterface $unitTranslation
+                                EntityRepositoryInterface $unitTranslation,
+                                EntityRepositoryInterface $parcelTracking
 
     )
     {
@@ -54,6 +57,7 @@ class OrderInterfaceRepositoryContainer
         $this->languageRepository = $languageRepository;
         $this->countryRepository = $countryRepository;
         $this->unitTranslation = $unitTranslation;
+        $this->parcelTracking = $parcelTracking;
     }
 
     /** Get the value of orderRepository */
@@ -120,5 +124,13 @@ class OrderInterfaceRepositoryContainer
     public function getUnitTranslation()
     {
         return $this->unitTranslation;
+    }
+
+    /**
+     * Get the value of parcelTracking
+     */ 
+    public function getParcelTracking()
+    {
+        return $this->parcelTracking;
     }
 }

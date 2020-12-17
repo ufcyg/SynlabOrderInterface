@@ -21,11 +21,21 @@ class ParcelTrackingDefinition extends EntityDefinition
         return self::ENTITY_NAME;
     }
 
+    public function getEntityClass(): string
+    {
+        return ParcelTrackingEntity::class;
+    }
+
+    public function getCollectionClass(): string
+    {
+        return ParcelTrackingCollection::class;
+    }
+
     protected function defineFields(): FieldCollection
     {
         return new FieldCollection([
             (new IdField('id', 'id'))->addFlags(new Required(), new PrimaryKey()),
-            (new FkField('order_id', 'orderId', OrderDefinition::class))->addFlags(new Required()),
+            (new StringField('order_id', 'orderId'))->addFlags(new Required()),
             (new StringField('service', 'service'))->addFlags(new Required()),
             (new IntField('position', 'position'))->addFlags(new Required()),
             (new StringField('tracking_number', 'trackingNumber'))->addFlags(new Required())

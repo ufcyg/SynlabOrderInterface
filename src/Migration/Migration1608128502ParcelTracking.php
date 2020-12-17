@@ -17,7 +17,7 @@ class Migration1608128502ParcelTracking extends MigrationStep
         $connection->executeUpdate('
             CREATE TABLE IF NOT EXISTS `as_parcel_tracking` (
               `id` BINARY(16) NOT NULL,
-              `order_id` BINARY(16) NOT NULL,
+              `order_id` VARCHAR(255) NOT NULL,
               `service` VARCHAR(4) NOT NULL,
               `position` VARCHAR(6) NOT NULL,
               `trackingnumber` VARCHAR(46) NOT NULL,

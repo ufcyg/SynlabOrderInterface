@@ -5,6 +5,7 @@ namespace SynlabOrderInterface\Core\Api\Utilities;
 use DateInterval;
 use DateTime;
 use Shopware\Core\Checkout\Order\Aggregate\OrderAddress\OrderAddressEntity;
+use Shopware\Core\Checkout\Order\Aggregate\OrderDelivery\OrderDeliveryEntity;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
@@ -12,6 +13,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\RangeFilter;
 use Shopware\Core\System\Country\CountryEntity;
+use Symfony\Component\Validator\Constraints\Length;
 
 class OrderInterfaceUtils
 {
@@ -171,18 +173,52 @@ class OrderInterfaceUtils
         return $countryEntity->getIso();
     }
 
-    public function getDeliveryEntityID(EntityRepositoryInterface $orderDeliveryRepository, string $orderEntityID, Context $context): string
+    public function getDeliveryEntityID(string $orderEntityID, Context $context): string
+    {
+        return $this->getDeliveryEntity($orderEntityID, $context)->getId();
+    }
+
+    public function getDeliveryEntity(string $orderEntityID, Context $context): OrderDeliveryEntity
     {
         $criteria = new Criteria();
-        $entities = $orderDeliveryRepository->search($criteria, $context);
+        $entities = $this->repositoryContainer->getOrderDeliveryRepository()->search($criteria, $context);
 
         /** @var OrderDeliveryEntity $orderDelivery */
-        foreach($entities as $id => $orderDelivery)
+        foreach($entities as $entityID => $orderDelivery)
         {
             if ($orderDelivery->getOrderId() === $orderEntityID)
             {
-                return $orderDelivery->getId();
+                return $orderDelivery;
             }
         }
+    }
+
+    public function trackingnumberAtPositionExistsCk($positionNumber, $trackingnumber, $context): bool
+    {
+        /** @var EntityRepositoryInterface $parcelTrackingRepository */
+        $parcelTrackingRepository = $this->repositoryContainer->getParcelTracking();
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter("trackingNumber", $trackingnumber));
+
+        /** @var EntitySearchResult $searchResult */
+        $searchResult = $parcelTrackingRepository->search($criteria, $context);
+
+        if(count($searchResult) > 0)
+        {
+            foreach($searchResult as $entityID => $parcelTrackingEntity)
+            {
+                if($parcelTrackingEntity->getPosition() == $positionNumber)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public function updateTrackingNumbers()
+    {
+        
     }
 }

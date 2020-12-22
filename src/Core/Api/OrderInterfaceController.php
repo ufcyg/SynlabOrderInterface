@@ -211,13 +211,13 @@ class OrderInterfaceController extends AbstractController
                     /** @var EntityRepositoryInterface $orderRepositoryContainer */
                     $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
                     /** @var EntitySearchResult $entities */
-                    $orderEntitiy = $orderRepositoryContainer->search($criteria, $context);
+                    $orderEntities = $orderRepositoryContainer->search($criteria, $context);
                     /** @var OrderEntity $order */
-                    $order = $orderEntitiy->first();
+                    $order = $orderEntities->first();
 
                     if($order == null)
                     {
-                        //TODO major error (received answer for not existant order)
+                        //TODO major error (received answer for non existant order)
                         continue;
                     }
                     switch ($filenameContents[2])
@@ -274,7 +274,7 @@ class OrderInterfaceController extends AbstractController
                     $order = $orderEntities->first();
 
                     /** @var string $orderDelivery */
-                    $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($this->repositoryContainer->getOrderDeliveryRepository(),$order->getId(),$context);
+                    $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($order->getId(),$context);
                     
                     /** @var Criteria $criteria */
                     $criteria = new Criteria();
@@ -290,21 +290,34 @@ class OrderInterfaceController extends AbstractController
                     $filecontents = file_get_contents($path . $filename);
                     $fileContentsByLine = explode(PHP_EOL,$filecontents);
                     $headContents = explode(';',$fileContentsByLine[0]);
-
+                    $trackingnumbers = array();
                     for ($j = 1; $j < count($fileContentsByLine)-1; $j++)
                     {
                         $lineContents = explode(';', $fileContentsByLine[$j]);
 
-                        $trackingData[] = [
-                            'id' => Uuid::randomHex(),
-                            'orderId' => strval($order->getId()),
-                            'service' => $headContents[4],
-                            'position' => $lineContents[2],
-                            'trackingNumber' => $lineContents[9]
-                        ];
+                        if(!$this->oiUtils->trackingnumberAtPositionExistsCk($lineContents[2], $lineContents[9], $context))
+                        {
+                            $trackingData[] = [
+                                'id' => Uuid::randomHex(),
+                                'orderId' => strval($order->getId()),
+                                'service' => $headContents[4],
+                                'position' => $lineContents[2],
+                                'trackingNumber' => $lineContents[9]
+                            ];
+                            array_push($trackingnumbers,$lineContents[9]);
+                        }
                     }
-                    $this->repositoryContainer->getParcelTracking()->create($trackingData, $context);
                     $stateChanged = $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'ship');
+                    if($stateChanged)
+                    {
+                        $this->repositoryContainer->getParcelTracking()->create($trackingData, $context);
+                        $this->repositoryContainer->getOrderDeliveryRepository()->update(
+                            [
+                                [ 'id' => $orderDeliveryID, 'trackingCodes' => $trackingnumbers ],
+                            ],
+                            $context);
+                    }
+                    
                 }
                 
             }

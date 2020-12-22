@@ -22,7 +22,7 @@ class Migration1608128502ParcelTracking extends MigrationStep
         //       `position` VARCHAR(6) NOT NULL,
         //       `trackingnumber` VARCHAR(46) NOT NULL,
         //       `created_at` DATETIME(3) NOT NULL,
-        //       `updated_at` DATETIME(3) NULL,
+        //       
         //       PRIMARY KEY (`id`)
         //     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         // ');
@@ -32,7 +32,8 @@ class Migration1608128502ParcelTracking extends MigrationStep
             `service`           VARCHAR(4) NOT NULL,
             `position`          VARCHAR(6) NOT NULL,
             `tracking_number`   VARCHAR(46) NOT NULL,
-            `created_at`        DATETIME(3) NOT NULL
+            `created_at`        DATETIME(3) NOT NULL,
+            `updated_at`        DATETIME(3) NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
     }
 

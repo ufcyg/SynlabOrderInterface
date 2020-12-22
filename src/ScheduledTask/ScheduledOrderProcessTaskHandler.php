@@ -5,11 +5,10 @@ namespace SynlabOrderInterface\ScheduledTask;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTaskHandler;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SynlabOrderInterface\Core\Api\OrderInterfaceController;
 
 
-class ScheduledOrderTransferTaskHandler extends ScheduledTaskHandler
+class ScheduledOrderProcessTaskHandler extends ScheduledTaskHandler
 {
     /** @var OrderInterfaceController $interfaceController */
     private $interfaceController;
@@ -27,6 +26,6 @@ class ScheduledOrderTransferTaskHandler extends ScheduledTaskHandler
 
     public function run(): void
     {
-        $this->interfaceController->submitOrders(Context::createDefaultContext());
+        $this->interfaceController->pullRMWA(Context::createDefaultContext());
     }    
 }

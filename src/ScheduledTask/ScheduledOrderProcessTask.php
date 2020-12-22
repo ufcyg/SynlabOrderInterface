@@ -4,16 +4,16 @@ namespace SynlabOrderInterface\ScheduledTask;
 
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTask;
 
-class ScheduledOrderTransferTask extends ScheduledTask
+class ScheduledOrderProcessTask extends ScheduledTask
 {
     public static function getTaskName(): string
     {
-        return 'synlab.scheduled_order_transfer_task';
+        return 'synlab.scheduled_order_process_task';
     }
 
     public static function getDefaultInterval(): int
     {
-        return 86400; // daily
+        return 300; // 5minutes
     }
     // /** fixing swagging bullshit, quick and dirty REFACTORING */
     // public function getDeadMessageId()

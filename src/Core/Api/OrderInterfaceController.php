@@ -22,6 +22,8 @@ use SynlabOrderInterface\Core\Api\Utilities\SFTPController;
 use SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 
 /**
  * @RouteScope(scopes={"api"})
@@ -178,15 +180,15 @@ class OrderInterfaceController extends AbstractController
      * @param Context $context;
      * @return Response
      */
-    public function pullRMWA(Context $context): Response
+    public function pullRMWA(Context $context):Response
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA');
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        $this->sftpController->pullFile($path,'RM_WA');
-
-        return $this->checkRMWA($context);
+        
+        $this->sftpController->pullFile($path,'RM_WA', $this, $context, $response);
+        return $response;
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkRMWA", name="api.custom.synlab_order_interface.checkRMWA", methods={"POST"})
@@ -195,6 +197,7 @@ class OrderInterfaceController extends AbstractController
      */
     public function checkRMWA(Context $context): Response
     {
+        $deleteFilesWhenFinished = true;
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA') . '/';
         if (file_exists($path)) {
             $files = scandir($path);
@@ -217,24 +220,30 @@ class OrderInterfaceController extends AbstractController
 
                     if($order == null)
                     {
+                        $deleteFilesWhenFinished = false;
                         //TODO major error (received answer for non existant order)
                         continue;
                     }
                     switch ($filenameContents[2])
                     {
                         case '003': // order cannot be changed (already packed, shipped, cancelled)
+                            $deleteFilesWhenFinished = false;
                             //TODO
                         break;
                         case '005': // cannot be cancelled because never created
+                            $deleteFilesWhenFinished = false;
                             //TODO
                         break;
                         case '006': // cannot be cancelled because already processed or cancelled
+                            $deleteFilesWhenFinished = false;
                             //TODO
                         break;
                         case '007': // order changed
+                            $deleteFilesWhenFinished = false;
                             //TODO
                         break;
                         case '009': // minor error in order
+                            $deleteFilesWhenFinished = false;
                             //TODO
                         break;
                         case '010': // order sucessfully imported to rieck LFS
@@ -244,6 +253,7 @@ class OrderInterfaceController extends AbstractController
                             $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'complete');
                         break;
                         case '999': // major error (file doesn't meet the expectations, e.g. unfitting fieldlengths, fieldformats, missing necessary fields)
+                            $deleteFilesWhenFinished = false;
                             //TODO
                         break;
                         default:
@@ -311,17 +321,31 @@ class OrderInterfaceController extends AbstractController
                     if($stateChanged)
                     {
                         $this->repositoryContainer->getParcelTracking()->create($trackingData, $context);
-                        $this->repositoryContainer->getOrderDeliveryRepository()->update(
-                            [
-                                [ 'id' => $orderDeliveryID, 'trackingCodes' => $trackingnumbers ],
-                            ],
-                            $context);
+
+                        $this->oiUtils->updateTrackingNumbers($orderDeliveryID, $trackingnumbers, $context);
                     }
-                    
                 }
-                
             }
         } 
+        if ($deleteFilesWhenFinished)
+        {
+            $dir = $path;
+            $it = new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS);
+            $files = new RecursiveIteratorIterator($it,
+                 RecursiveIteratorIterator::CHILD_FIRST);
+            foreach($files as $file) 
+            {
+                if ($file->isDir())
+                {
+                    rmdir($file->getRealPath());
+                }
+                else 
+                {
+                    unlink($file->getRealPath());
+                }
+            }
+            rmdir($dir);
+        }
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -336,7 +360,7 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        $this->sftpController->pullFile($path,'RM_WE');
+        // $this->sftpController->pullFile($path,'RM_WE');
         return $this->checkRMWE($context);
     }
     /**
@@ -360,7 +384,7 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        $this->sftpController->pullFile($path,'Artikel_Error');
+        // $this->sftpController->pullFile($path,'Artikel_Error');
         return $this->checkArticleError($context);
     }
     /**
@@ -384,7 +408,7 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        $this->sftpController->pullFile($path,'Bestand');
+        // $this->sftpController->pullFile($path,'Bestand');
         return $this->checkBestand($context);
     }
     /**

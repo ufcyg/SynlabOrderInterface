@@ -3,6 +3,7 @@
 namespace SynlabOrderInterface\Core\Api\Utilities;
 
 use Exception;
+use Symfony\Component\HttpFoundation\Response;
 
 class SFTPController
 {
@@ -60,7 +61,7 @@ class SFTPController
             }
         }
     }
-    public function pullFile(string $localDir, string $remoteDir)
+    public function pullFile(string $localDir, string $remoteDir, $orderInterfaceController, $context, &$response)
     {
         $this->openConnection();
         if($this->authConnection())
@@ -76,15 +77,17 @@ class SFTPController
                         $stream = fopen('ssh2.sftp://' . intval($sftp) . $this->homeDirectory . $remoteDir . '/' . $file, 'r');
                         file_put_contents($localDir . '/' . $file,$stream);
                         //this deletes the remote file, this is required by rieck
-                        // ssh2_sftp_unlink($sftp, $this->homeDirectory . $remoteDir . '/' . $file);
+                        ssh2_sftp_unlink($sftp, $this->homeDirectory . $remoteDir . '/' . $file);
                     }
                 }
+                ssh2_disconnect($this->connection);
+                $response = call_user_func( array( $orderInterfaceController, 'checkRMWA' ), $context );
             }
         }
         else
         {
             throw new Exception("Could not authenticate with username $this->username " .
             "and password $this->password.");
-        }        
+        }           
     }
 }

@@ -13,7 +13,6 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\RangeFilter;
 use Shopware\Core\System\Country\CountryEntity;
-use Symfony\Component\Validator\Constraints\Length;
 
 class OrderInterfaceUtils
 {
@@ -217,8 +216,30 @@ class OrderInterfaceUtils
         return false;
     }
 
-    public function updateTrackingNumbers()
+    public function updateTrackingNumbers($orderDeliveryID, $trackingnumbers, $context)
     {
-        
+        /** @var EntityRepositoryInterface $orderDeliveryRepository */
+        $orderDeliveryRepository = $this->repositoryContainer->getOrderDeliveryRepository();
+
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter("id",$orderDeliveryID));
+
+        /** @var EntitySearchResult $searchResult */
+        $searchResult = $orderDeliveryRepository->search($criteria, $context);
+        /** @var OrderDeliveryEntity $orderDeliveryEntity */
+        $orderDeliveryEntity = $searchResult->first();
+
+        $currentTrackingnumbers = $orderDeliveryEntity->getTrackingCodes();
+
+        foreach($trackingnumbers as $value){
+            if(!in_array($value, $currentTrackingnumbers, true)){
+                array_push($currentTrackingnumbers, $value);
+            }
+        }
+        $orderDeliveryRepository->update([
+                                             [ 'id' => $orderDeliveryID, 'trackingCodes' => $currentTrackingnumbers ],
+                                         ],
+                                         $context);
+
     }
 }

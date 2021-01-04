@@ -1,9 +1,4 @@
 <?php declare(strict_types=1);
-/** 
- * 
- * This function needs refactoring since it currently uses a fair amount of hard coded values that will break when another language is implemented and used
- * 
-*/
 namespace SynlabOrderInterface\Core\Api\Utilities;
 
 use Shopware\Core\Checkout\Order\Aggregate\OrderDelivery\OrderDeliveryEntity;
@@ -25,55 +20,31 @@ class OIOrderServiceUtils
     //process, complete, cancel, reopen
     public function updateOrderStatus(OrderEntity $order, string $entityID, $transition)
     {   
-        $stateName = $order->getStateMachineState()->getName();
+        $stateName = $order->getStateMachineState()->getTechnicalName();
         switch ($stateName)
         {
-            case "Open":
-                if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'process') == 0))
-                {
-                    return false;
-                }
-            break;
-            case "Offen":
+            case "open":
                 if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'process') == 0))
                 {
                     return false;
                 }
             break;
 
-            case "In progress":
-                if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'complete') == 0))
-                {
-                    return false;
-                }
-            break;
-            case "In Bearbeitung":
+            case "in_progress":
                 if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'complete') == 0))
                 {
                     return false;
                 }
             break;
 
-            case "Done": 
-                if(!(strcmp($transition,'reopen') == 0))
-                {
-                    return false;
-                }
-            break;
-            case "Abgeschlossen": 
+            case "completed": 
                 if(!(strcmp($transition,'reopen') == 0))
                 {
                     return false;
                 }
             break;
 
-            case "Cancelled":
-                if(!(strcmp($transition,'reopen') == 0))
-                {
-                    return false;
-                }
-            break;
-            case "Abgebrochen":
+            case "cancelled":
                 if(!(strcmp($transition,'reopen') == 0))
                 {
                     return false;
@@ -87,68 +58,38 @@ class OIOrderServiceUtils
     //ship, ship_partially, retour, retour_partially, cancel, reopen
     public function updateOrderDeliveryStatus(OrderDeliveryEntity $orderDelivery,string $entityID, string $transition): bool
     {
-        switch ($orderDelivery->getStateMachineState()->getName())
+        switch ($orderDelivery->getStateMachineState()->getTechnicalName())
         {
-            case "Open":
-                if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'ship') == 0 || strcmp($transition,'ship_partially') == 0))
-                {
-                    return false;
-                }
-            break;
-            case "Open":
+            case "open":
                 if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'ship') == 0 || strcmp($transition,'ship_partially') == 0))
                 {
                     return false;
                 }
             break;
 
-            case "Shipped":
-                if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'retour') == 0 || strcmp($transition,'retour_partially') == 0))
-                {
-                    return false;
-                }
-            break;
-            case "Versandt":
+            case "shipped":
                 if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'retour') == 0 || strcmp($transition,'retour_partially') == 0))
                 {
                     return false;
                 }
             break;
 
-            case "Shipped (partially)": 
-                if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'retour') == 0 || strcmp($transition,'retour_partially') == 0 || strcmp($transition,'ship') == 0))
-                {
-                    return false;
-                }
-            break;
-            case "Teilweise versandt": 
+            case "shipped_partially": 
                 if(!(strcmp($transition,'cancel') == 0 || strcmp($transition,'retour') == 0 || strcmp($transition,'retour_partially') == 0 || strcmp($transition,'ship') == 0))
                 {
                     return false;
                 }
             break;
 
-            case "Returned (partially)":
-                return false;
-            break;
-            case "Teilretour":
+            case "refunded_partially":
                 return false;
             break;
 
-            case "Returned":
-                return false;
-            break;
-            case "Retour":
+            case "returned":
                 return false;
             break;
 
-            case "Cancelled":
-                if(!(strcmp($transition,'reopen') == 0))
-                {
-                    return false;
-                }
-            break;
-            case "Abgebrochen":
+            case "cancelled":
                 if(!(strcmp($transition,'reopen') == 0))
                 {
                     return false;

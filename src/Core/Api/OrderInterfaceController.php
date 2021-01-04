@@ -111,8 +111,7 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         foreach($entities as $orderID => $order)
         {
-            $statemachineStateName = $order->getStateMachineState()->getTechnicalName();
-            if(strcmp($statemachineStateName,'open') != 0)
+            if(strcmp($$order->getStateMachineState()->getTechnicalName(),'open') != 0)
             {
                 continue;
             }
@@ -443,7 +442,7 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         foreach ($entities as $orderID => $order) 
         {
-            $this->oiOrderServiceUtils->updateOrderStatus($order, $orderID, 'reopen');
+            $this->oiOrderServiceUtils->updateOrderStatus($order, $orderID, 'complete');
         }
         return new Response('',Response::HTTP_NO_CONTENT);
     }

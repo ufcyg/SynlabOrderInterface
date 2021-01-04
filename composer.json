@@ -1,7 +1,7 @@
 {
   "name": "synlab/order-interface",
   "description": "Interface orders with Rieck",
-  "version": "v0.3.1",
+  "version": "v0.3.2",
   "type": "shopware-platform-plugin",
   "license": "proprietary",
   "authors": [

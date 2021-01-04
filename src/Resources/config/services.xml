@@ -39,14 +39,13 @@
             <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils" />
             <call method="setContainer">
                 <argument type="service" id="service_container" />
-            </call>           
-
+            </call>
         </service>
 
         <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderTransferTask">
             <tag name="shopware.scheduled.task" />
         </service>
-        
+
         <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessTask">
             <tag name="shopware.scheduled.task" />
         </service>

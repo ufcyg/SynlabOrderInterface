@@ -2,7 +2,7 @@
 
 namespace SynlabOrderInterface\Core\Api;
 
-
+use Exception;
 use Shopware\Core\Framework\Context;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
@@ -24,6 +24,10 @@ use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use Shopware\Core\Content\Product\ProductDefinition;
+use Shopware\Core\Content\Product\ProductEntity;
+use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
+use Shopware\Core\Framework\DataAbstractionLayer\Write\WriteContext;
 
 /**
  * @RouteScope(scopes={"api"})
@@ -201,7 +205,7 @@ class OrderInterfaceController extends AbstractController
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA') . '/';
         if (file_exists($path)) {
             $files = scandir($path);
-            for($i = 2; $i < count($files)-1; $i++)
+            for($i = 2; $i < count($files); $i++)
             {
                 $filename = $files[$i];
                 $filenameContents = explode('_',$filename);
@@ -359,7 +363,7 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        // $this->sftpController->pullFile($path,'RM_WE');
+        $this->sftpController->pullFile($path,'RM_WE', $this, $context, $response, 'checkRMWE');
         return $this->checkRMWE($context);
     }
     /**
@@ -383,7 +387,7 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        // $this->sftpController->pullFile($path,'Artikel_Error');
+        $this->sftpController->pullFile($path,'Artikel_Error', $this, $context, $response, 'checkArticleError');
         return $this->checkArticleError($context);
     }
     /**
@@ -407,7 +411,7 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        // $this->sftpController->pullFile($path,'Bestand');
+        $this->sftpController->pullFile($path,'Bestand', $this, $context, $response, 'checkBestand');
         return $this->checkBestand($context);
     }
     /**
@@ -417,8 +421,57 @@ class OrderInterfaceController extends AbstractController
      */
     public function checkBestand(Context $context): Response
     {
-        //TODO
+        $deleteFilesWhenFinished = true;
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand') . '/';
+        if (file_exists($path)) {
+            $files = scandir($path);
+            for ($i = 2; $i < count($files); $i++) {
+                $filename = $files[$i];
+                $filenameContents = explode('_', $filename);
+
+                switch ($filenameContents[0])
+                    {
+                        case 'BESTAND': // Daily report of current available items
+                            $filecontents = file_get_contents($path . $filename);
+                            $fileContentsByLine = explode(PHP_EOL,$filecontents);       
+                            foreach ($fileContentsByLine as $contentLine)
+                            {
+                                $lineContents = explode(';', $contentLine);
+                                $this->updateProduct($lineContents[1], $lineContents[4], $lineContents[5], $context);
+                            }
+                            
+                            //TODO caclulate discrepancy, email notification admin
+                            
+                        break;
+                        case 'BS+': // addition of currently available items (items lost but found, etc.)
+                            //TODO
+                        break;
+                        case 'BS-': // subtraction of currently available items (lost, stolen, destroyed, etc.)
+                            //TODO
+                        break;
+                        default:
+                        break;
+                    }
+            }
+        }
         return new Response('',Response::HTTP_NO_CONTENT);
+    }
+    private function updateProduct(string $productNumber, $stock, $availableStock, $context)
+    {
+        /** @var EntityRepositoryInterface $productRepository */
+        $productRepository = $this->container->get('product.repository');
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productNumber', $productNumber));
+        $searchResult = $productRepository->search($criteria,$context);
+        $productEntity = $searchResult->first();
+
+        $productRepository->update(
+            [
+                [ 'id' => $productEntity->getId(), 'stock' => intval($stock) ],
+                [ 'id' => $productEntity->getId(), 'availableStock' => intval($availableStock)-500 ],
+            ],
+            Context::createDefaultContext()
+        );
     }
 
 

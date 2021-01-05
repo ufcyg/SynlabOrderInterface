@@ -187,7 +187,7 @@ class OrderInterfaceController extends AbstractController
             mkdir($path, 0777, true);
         } 
         
-        $this->sftpController->pullFile($path,'RM_WA', $this, $context, $response);
+        $this->sftpController->pullFile($path,'RM_WA', $this, $context, $response, 'checkRMWA');
         return $response;
     }
     /**
@@ -208,15 +208,8 @@ class OrderInterfaceController extends AbstractController
 
                 if($filenameContents[1] === 'STATUS') // status of order data procession
                 {
-                    /** @var Criteria $criteria */
-                    $criteria = new Criteria();
-                    $criteria->addFilter(new EqualsFilter('orderNumber', $filenameContents[3]));
-                    /** @var EntityRepositoryInterface $orderRepositoryContainer */
-                    $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
-                    /** @var EntitySearchResult $entities */
-                    $orderEntities = $orderRepositoryContainer->search($criteria, $context);
                     /** @var OrderEntity $order */
-                    $order = $orderEntities->first();
+                    $order = $this->getOrder('orderNumber', $filenameContents[3],$context);
 
                     if($order == null)
                     {
@@ -273,15 +266,8 @@ class OrderInterfaceController extends AbstractController
                 }
                 else if ($filenameContents[1] === 'VLE') // packages loaded
                 {
-                    /** @var Criteria $criteria */
-                    $criteria = new Criteria();
-                    $criteria->addFilter(new EqualsFilter('orderNumber', $filenameContents[2]));
-                    /** @var EntityRepositoryInterface $orderRepositoryContainer */
-                    $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
-                    /** @var EntitySearchResult $entities */
-                    $orderEntities = $orderRepositoryContainer->search($criteria, $context);
                     /** @var OrderEntity $order */
-                    $order = $orderEntities->first();
+                    $order = $this->getOrder('orderNumber', $filenameContents[2],$context);
 
                     /** @var string $orderDelivery */
                     $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($order->getId(),$context);
@@ -347,6 +333,19 @@ class OrderInterfaceController extends AbstractController
             rmdir($dir);
         }
         return new Response('',Response::HTTP_NO_CONTENT);
+    }
+    private function getOrder($identifier, $filenameContents, $context): OrderEntity
+    {
+        /** @var Criteria $criteria */
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter($identifier, $filenameContents));
+        /** @var EntityRepositoryInterface $orderRepositoryContainer */
+        $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
+        /** @var EntitySearchResult $entities */
+        $orderEntities = $orderRepositoryContainer->search($criteria, $context);
+        /** @var OrderEntity $order */
+        $order = $orderEntities->first();
+        return $order;
     }
 
     /**

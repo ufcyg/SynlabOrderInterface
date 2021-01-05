@@ -142,7 +142,7 @@ class OrderInterfaceUtils
             $deliverAddressEntity = $addressEntity->first();
         }
         else
-        {// if array is 2 long, the first entry is customer, 2nd entry is delivery address, i always want the delivery address to be the frist entry
+        {// if array is 2 long, the first entry is customer, 2nd entry is delivery address, i always want the delivery address to be the first entry
             $customerAddressEntity = $addressEntity->first();
             $deliverAddressEntity = $addressEntity->last();
         }

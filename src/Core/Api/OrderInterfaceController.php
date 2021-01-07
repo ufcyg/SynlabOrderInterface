@@ -2,7 +2,6 @@
 
 namespace SynlabOrderInterface\Core\Api;
 
-use Exception;
 use Shopware\Core\Framework\Context;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
@@ -24,10 +23,9 @@ use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use Shopware\Core\Content\Product\ProductDefinition;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
-use Shopware\Core\Framework\DataAbstractionLayer\Write\WriteContext;
+use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceMailServiceHelper;
 
 /**
  * @RouteScope(scopes={"api"})
@@ -50,16 +48,19 @@ class OrderInterfaceController extends AbstractController
     private $companyID;
     /** @var OIOrderServiceUtils $oiOrderServiceUtils */
     private $oiOrderServiceUtils;
-
+    /** @var OrderInterfaceMailServiceHelper $oimailserviceHelper */
+    private $oimailserviceHelper;
     public function __construct(SystemConfigService $systemConfigService,
                                 OrderInterfaceRepositoryContainer $repositoryContainer,
                                 OrderInterfaceUtils $oiUtils,
-                                OIOrderServiceUtils $oiOrderServiceUtils)
+                                OIOrderServiceUtils $oiOrderServiceUtils,
+                                OrderInterfaceMailServiceHelper $oimailserviceHelper)
     {
         $this->systemConfigService = $systemConfigService;
         $this->repositoryContainer = $repositoryContainer;
         $this->oiUtils = $oiUtils;
         $this->oiOrderServiceUtils = $oiOrderServiceUtils;
+        $this->oimailserviceHelper = $oimailserviceHelper;
 
         $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
         $this->csvFactory = new CSVFactory($this->companyID, $this->repositoryContainer, $this->oiUtils);
@@ -373,8 +374,102 @@ class OrderInterfaceController extends AbstractController
      */
     public function checkRMWE(Context $context): Response
     {
-        //TODO
+        $deleteFilesWhenFinished = true;
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WE') . '/';
+        if (file_exists($path)) {
+            $files = scandir($path);
+            for ($i = 2; $i < count($files); $i++) {
+                $filename = $files[$i];
+                $filenameContents = explode('_',$filename);
+
+                if($filenameContents[1] == 'STATUS')
+                {
+                    switch($filenameContents[2])
+                    {
+                        case '001': //WEAvis couldn't be created
+                        break;
+                        case '005': //WEAvis cannot be cancelled due to not existant, already processed or cancelled
+                        break;
+                        case '007': //WEAvis change processed
+                        break;
+                        case '009': //WEAvis could not be processed, errors inside WEAvis
+                        break;
+                        case '010': //WEAvis processed
+                        break;
+                        case '999': // WEAvis message could not be processed, out of specification
+                        break;
+                        default:
+                        break;
+                    }
+                }
+                else if($filenameContents[1] == 'ERROR')
+                {
+                    
+                }
+                else if($filenameContents[1] == 'WKE')
+                {
+                    $filecontents = file_get_contents($path . $filename);
+                    $fileContentsByLine = explode(PHP_EOL,$filecontents);
+                    $headContents = explode(';',$fileContentsByLine[0]);
+                    for ($j = 1; $j < count($fileContentsByLine)-1; $j++)
+                    {
+                        $lineContents = explode(';', $fileContentsByLine[$j]);
+                        $articleNumber = $lineContents[5];
+                        $amount = $lineContents[6];
+                        $amountAvailable = $lineContents[7];
+                        $amountDamaged = $lineContents[8];
+                        $amountClarification = $lineContents[9];
+                        $amountPostProcessing = $lineContents[10];
+                        $amountOther = $lineContents[11];
+
+                        
+
+                        $this->updateProduct($articleNumber,$amount,$amountAvailable);
+
+                        if($amount != $amountAvailable)
+                        {
+                            //TODO MAIL
+                        }
+                    }
+                }
+                
+            }
+        }
+
         return new Response('',Response::HTTP_NO_CONTENT);
+    }
+    private function getProduct(string $articleNumber): ProductEntity
+    {
+        /** @var EntityRepositoryInterface $productRepository */
+        $productRepository = $this->container->get('product.repository');
+
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productNumber', $articleNumber));
+
+        $searchResult = $productRepository->search($criteria,Context::createDefaultContext());
+        return $searchResult->first();
+    }
+    private function updateProduct(string $articleNumber, $stockAddition, $availableStockAddition)
+    {
+        /** @var EntityRepositoryInterface $productRepository */
+        $productRepository = $this->container->get('product.repository');
+
+        /** @var ProductEntity $productEntity */
+        $productEntity = $this->getProduct($articleNumber);
+
+        $currentStock = $productEntity->getStock();
+        $currentStockAvailable = $productEntity->getAvailableStock();
+
+        $newStockValue = $currentStock + intval($availableStockAddition);
+        // $newAvailableStockValue = $currentStockAvailable + intval($availableStockAddition);
+
+        $productRepository->update(
+            [
+                [ 'id' => $productEntity->getId(), 'stock' => $newStockValue ],
+                // [ 'id' => $productEntity->getId(), 'availableStock' => $newAvailableStockValue ], //value is write protected
+            ],
+            Context::createDefaultContext()
+        );
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/pullArticleError", name="api.custom.synlab_order_interface.pullArticleError", methods={"POST"})
@@ -437,7 +532,8 @@ class OrderInterfaceController extends AbstractController
                             foreach ($fileContentsByLine as $contentLine)
                             {
                                 $lineContents = explode(';', $contentLine);
-                                $this->updateProduct($lineContents[1], $lineContents[4], $lineContents[5], $context);
+                                // $this->updateProduct($lineContents[1], $lineContents[4], $lineContents[5], $context);
+                                //TODO COMPARE
                             }
                             
                             //TODO caclulate discrepancy, email notification admin
@@ -455,23 +551,6 @@ class OrderInterfaceController extends AbstractController
             }
         }
         return new Response('',Response::HTTP_NO_CONTENT);
-    }
-    private function updateProduct(string $productNumber, $stock, $availableStock, $context)
-    {
-        /** @var EntityRepositoryInterface $productRepository */
-        $productRepository = $this->container->get('product.repository');
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('productNumber', $productNumber));
-        $searchResult = $productRepository->search($criteria,$context);
-        $productEntity = $searchResult->first();
-
-        $productRepository->update(
-            [
-                [ 'id' => $productEntity->getId(), 'stock' => intval($stock) ],
-                [ 'id' => $productEntity->getId(), 'availableStock' => intval($availableStock)-500 ],
-            ],
-            Context::createDefaultContext()
-        );
     }
 
 
@@ -498,4 +577,40 @@ class OrderInterfaceController extends AbstractController
         }
         return new Response('',Response::HTTP_NO_CONTENT);
     }
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/orderInterfaceHelper", name="api.custom.synlab_order_interface.orderInterfaceHelper", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function orderInterfaceHelper(Context $context)
+    {
+
+        // $articleNumber = 'SCG204';
+        // $stockAddition = 10000;
+        // $availableStockAddition = 5000;
+
+        // /** @var EntityRepositoryInterface $productRepository */
+        // $productRepository = $this->container->get('product.repository');
+
+        // /** @var ProductEntity $productEntity */
+        // $productEntity = $this->getProduct($articleNumber);
+
+        // $currentStock = $productEntity->getStock();
+        // $currentStockAvailable = $productEntity->getAvailableStock();
+
+        // $newStockValue = $currentStock + intval($stockAddition);
+        // $newAvailableStockValue = $currentStockAvailable + intval($availableStockAddition);
+
+        // $productRepository->update(
+        //     [
+        //         [ 'id' => $productEntity->getId(), 'stock' => $newStockValue ],
+        //         // [ 'id' => $productEntity->getId(), 'availableStock' => $newAvailableStockValue ],
+        //     ],
+        //     Context::createDefaultContext()
+        // );
+        $var = $this->container;
+        $this->oimailserviceHelper->sendMyMail($this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification'));
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+    
 }

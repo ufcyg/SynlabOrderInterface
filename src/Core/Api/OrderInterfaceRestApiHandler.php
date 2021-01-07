@@ -7,7 +7,7 @@ use GuzzleHttp\Psr7\Request;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
-
+//currently not used
 class OrderInterfaceRestApiHandler
 {
     /** @var Client */

@@ -63,5 +63,11 @@
             <helpText>Input the matching password for given username.</helpText>
             <helpText lang="de-DE">Geben Sie das dem Nutzernamen entsprechende Passwort ein.</helpText>
         </input-field>
+
+        <component name="sw-entity-single-select">
+            <name>fallbackSaleschannelNotification</name>
+            <entity>sales_channel</entity>
+            <label>Choose a fallback sales channel as origin for notifications if no other sales channel is known</label>
+        </component>
     </card>
 </config>

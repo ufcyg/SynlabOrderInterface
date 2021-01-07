@@ -13,6 +13,10 @@
             <argument type="service" id="Shopware\Core\Checkout\Order\SalesChannel\OrderService" />
         </service>
 
+        <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceMailServiceHelper" public="true">      
+            <argument id="Shopware\Core\Content\MailTemplate\Service\MailService" type="service"/>
+        </service>
+
         <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" public="true">
             <argument id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer" type="service" />
         </service>
@@ -37,6 +41,7 @@
             <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer" />
             <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" />
             <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceMailServiceHelper" />
             <call method="setContainer">
                 <argument type="service" id="service_container" />
             </call>

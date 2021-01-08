@@ -64,6 +64,24 @@
             <helpText lang="de-DE">Geben Sie das dem Nutzernamen entsprechende Passwort ein.</helpText>
         </input-field>
 
+        <input-field type="bool">
+            <name>deleteFilesAfterEvaluation</name>
+            <label>Delete transmitted files after evaluation</label>
+            <label lang="de-DE">Löschen übermittelter Daten nach der Auswertung</label>
+            <helpText>If toggled, files pulled from the logistic partner will be deleted after evaluation if no error occures.</helpText>
+            <helpText lang="de-DE">Falls aktiviert werden übermittelte Daten nach der Auswertung, sofern kein Fehler aufgetreten ist, gelöscht.</helpText>
+        </input-field>
+
+        <input-field>
+            <name>errorNotificationRecipients</name>
+            <label>Name and Mail of recipients of error notifications</label>
+            <label lang="de-DE">Name und Mailadresse der Empfänger von Fehlermeldungen</label>          
+            <placeholder>John Doe;john.doe@john.doe</placeholder>
+            <placeholder lang="de-DE">Max Mustermann;mustermann@muster.man</placeholder>
+            <helpText>Input as many recipients as needed in valid formation: NAME DELIMITER(;) MAIL</helpText>
+            <helpText lang="de-DE">Geben Sie beliebig viele Empfänger für Fehlerbenachrichtigungen in valider Form ein: NAME TRENNZEICHEN(;) MAILADRESSE.</helpText>
+        </input-field>
+
         <component name="sw-entity-single-select">
             <name>fallbackSaleschannelNotification</name>
             <entity>sales_channel</entity>

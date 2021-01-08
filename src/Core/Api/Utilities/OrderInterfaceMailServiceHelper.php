@@ -14,26 +14,25 @@ class OrderInterfaceMailServiceHelper
         $this->mailservice = $mailservice;
     }
 
-    public function sendMyMail($salesChannelID): void
+    public function sendMyMail(string $mailaddress, $recipientName ,$salesChannelID, string $subject, string $notification): void
     {
         $data = new ParameterBag();
         $data->set(
             'recipients',
             [
-                'iifsanalyzer@gmail.com' => 'Gott'
+                $mailaddress => $recipientName
             ]
         );
 
         $data->set('senderName', 'OrderInterfaceAdministrationBackend');
 
-        $data->set('contentHtml', 'Foo bar');
-        $data->set('contentPlain', 'Foo bar');
-        $data->set('subject', 'The subject');
+        $data->set('contentHtml', $notification);
+        $data->set('contentPlain', $notification);
+        $data->set('subject', $subject);
         $data->set('salesChannelId', $salesChannelID);
 
         $this->mailservice->send(
             $data->all(),
-            // $salesChannelContext->getContext(),
             Context::createDefaultContext()
         );
     }

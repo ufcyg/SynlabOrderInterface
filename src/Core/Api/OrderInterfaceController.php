@@ -202,7 +202,7 @@ class OrderInterfaceController extends AbstractController
      */
     public function checkRMWA(Context $context): Response
     {
-        $deleteFilesWhenFinished = true;
+        $deleteFilesWhenFinished = $this->systemConfigService->get('SynlabOrderInterface.config.deleteFilesAfterEvaluation');
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA') . '/';
         if (file_exists($path)) {
             $files = scandir($path);
@@ -219,30 +219,31 @@ class OrderInterfaceController extends AbstractController
                     if($order == null)
                     {
                         $deleteFilesWhenFinished = false;
-                        //TODO major error (received answer for non existant order)
+                        $this->sendErrorNotification('MAJOR ERROR','Major error occured. Received reply for non existant order. Received filename: ' . $filename);
                         continue;
                     }
                     switch ($filenameContents[2])
                     {
                         case '003': // order cannot be changed (already packed, shipped, cancelled)
                             $deleteFilesWhenFinished = false;
+                            $this->sendErrorNotification('RM_WA Status 003','Status 003 for order ' . $order->getOrderNumber());
                             //TODO
                         break;
                         case '005': // cannot be cancelled because never created
                             $deleteFilesWhenFinished = false;
-                            //TODO
+                            $this->sendErrorNotification('RM_WA Status 005','Status 005 for order ' . $order->getOrderNumber());
                         break;
                         case '006': // cannot be cancelled because already processed or cancelled
                             $deleteFilesWhenFinished = false;
-                            //TODO
+                            $this->sendErrorNotification('RM_WA Status 006','Status 006 for order ' . $order->getOrderNumber());
                         break;
                         case '007': // order changed
                             $deleteFilesWhenFinished = false;
-                            //TODO
+                            $this->sendErrorNotification('RM_WA Status 007','Status 007 for order ' . $order->getOrderNumber());
                         break;
                         case '009': // minor error in order
                             $deleteFilesWhenFinished = false;
-                            //TODO
+                            $this->sendErrorNotification('RM_WA Status 009','Status 009 for order ' . $order->getOrderNumber());
                         break;
                         case '010': // order sucessfully imported to rieck LFS
                             $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'process');
@@ -252,7 +253,7 @@ class OrderInterfaceController extends AbstractController
                         break;
                         case '999': // major error (file doesn't meet the expectations, e.g. unfitting fieldlengths, fieldformats, missing necessary fields)
                             $deleteFilesWhenFinished = false;
-                            //TODO
+                            $this->sendErrorNotification('MAJOR ERROR','Major error occured. One or more submitted files did not meet expectations and been rejected. Received filename: ' . $filename);
                         break;
                         default:
                         break;
@@ -387,18 +388,25 @@ class OrderInterfaceController extends AbstractController
                     switch($filenameContents[2])
                     {
                         case '001': //WEAvis couldn't be created
+                            $this->sendErrorNotification('RM_WE Status 001','Status 001 "WEAvis could not be created" for order ' . $filenameContents[3]);
                         break;
-                        case '005': //WEAvis cannot be cancelled due to not existant, already processed or cancelled
+                        case '005': //WEAvis cannot be cancelled due to being not existant, already processed or cancelled
+                            $this->sendErrorNotification('RM_WE Status 005','Status 005 "WEAvis cannot be cancelled due to being not existant, already processed or cancelled" for order ' . $filenameContents[3]);
                         break;
                         case '007': //WEAvis change processed
+                            // $this->sendErrorNotification('RM_WE Status 007','Status 007 "WEAvis could not be created" for order ' . $filenameContents[3]);
                         break;
                         case '009': //WEAvis could not be processed, errors inside WEAvis
+                            $this->sendErrorNotification('RM_WE Status 009','Status 009 "WEAvis could not be processed, errors inside WEAvis" for order ' . $filenameContents[3]);
                         break;
                         case '010': //WEAvis processed
+                            // $this->sendErrorNotification('RM_WE Status 010','Status 010 "WEAvis could not be created" for order ' . $filenameContents[3]);
                         break;
-                        case '999': // WEAvis message could not be processed, out of specification
+                        case '999': //WEAvis message could not be processed, out of specification
+                            $this->sendErrorNotification('RM_WE Status 999','Status 999 "WEAvis message could not be processed, out of specification" for order ' . $filenameContents[3]);
                         break;
                         default:
+                            $this->sendErrorNotification('RM_WE Status 999','Status 999 "WEAvis message could not be processed, out of specification" for order ' . $filenameContents[3]);
                         break;
                     }
                 }
@@ -421,14 +429,12 @@ class OrderInterfaceController extends AbstractController
                         $amountClarification = $lineContents[9];
                         $amountPostProcessing = $lineContents[10];
                         $amountOther = $lineContents[11];
-
                         
-
-                        $this->updateProduct($articleNumber,$amount,$amountAvailable);
+                        $this->updateProduct($articleNumber, $amount, $amountAvailable);
 
                         if($amount != $amountAvailable)
                         {
-                            //TODO MAIL
+                            $this->sendErrorNotification('RM_WE WKE','Damaged or otherwise unusable products for file ' . $filename . ' check back with logistics partner to keep stock information up to date.');
                         }
                     }
                 }
@@ -492,7 +498,19 @@ class OrderInterfaceController extends AbstractController
      */
     public function checkArticleError(Context $context): Response
     {
-        //TODO
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Artikel_Error') . '/';
+        if (file_exists($path)) {
+            $files = scandir($path);
+            if (count($files) > 2)
+            {
+                $filecontents = '';
+                for ($i = 2; $i < count($files); $i++) {
+                    $filename = $files[$i];
+                    $filecontents = $filename . '|||' . $filecontents . file_get_contents($path . $filename);
+                }
+                $this->sendErrorNotification('Error: Article base','Error reported by logistics partner, submitted article base contains errors check logfile for further informations. Logfile: ' . $filecontents);
+            }
+        }
         return new Response('',Response::HTTP_NO_CONTENT);
     }
     /**
@@ -608,9 +626,45 @@ class OrderInterfaceController extends AbstractController
         //     ],
         //     Context::createDefaultContext()
         // );
-        $var = $this->container;
-        $this->oimailserviceHelper->sendMyMail($this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification'));
+        $this->sendErrorNotification('TestError','This is a test error message.');
         return new Response('',Response::HTTP_NO_CONTENT);
     }
-    
+    private function sendErrorNotification(string $errorSubject, string $errorMessage)
+    {
+        $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
+
+        $recipientList = $this->systemConfigService->get('SynlabOrderInterface.config.errorNotificationRecipients');
+        $recipientData = explode(';', $recipientList);
+
+        for ($i = 0; $i< count($recipientData); $i +=2 )
+        {
+            $recipientName = $recipientData[$i];
+            $recipientAddress = $recipientData[$i+1];
+
+            $mailCheck = explode('@', $recipientAddress);
+            if(count($mailCheck) != 2)
+            {
+                continue;
+            }
+            $this->oimailserviceHelper->sendMyMail($recipientAddress, $recipientName, $notificationSalesChannel, $errorSubject, $errorMessage);
+        }
+    }
+    private function deleteFiles($dir)
+    {
+        $it = new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS);
+        $files = new RecursiveIteratorIterator($it,
+                RecursiveIteratorIterator::CHILD_FIRST);
+        foreach($files as $file) 
+        {
+            if ($file->isDir())
+            {
+                rmdir($file->getRealPath());
+            }
+            else 
+            {
+                unlink($file->getRealPath());
+            }
+        }
+        rmdir($dir);
+    }
 }

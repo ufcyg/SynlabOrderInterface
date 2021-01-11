@@ -4,6 +4,12 @@ namespace SynlabOrderInterface\Core\Api\Utilities;
 
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 
+/*
+
+Since only classes which inherit 'AbstactController' have a $container variable through which the DBAL can be accessed easily 
+we use our own repository container for the parts of the plugin where those repositories cannot be accessed easier.
+
+*/
 class OrderInterfaceRepositoryContainer
 {
     /** @var EntityRepositoryInterface $manufacturerTranslation */

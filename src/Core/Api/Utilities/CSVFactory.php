@@ -13,6 +13,11 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\System\Unit\Aggregate\UnitTranslation\UnitTranslationEntity;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
+/*
+
+Class solemny for generating large strings according to the documentation of logistics partner
+
+*/
 class CSVFactory
 {
     /** @var PropertyAccess $propertyAccessor */

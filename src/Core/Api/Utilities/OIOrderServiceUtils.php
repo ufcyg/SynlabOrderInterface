@@ -7,6 +7,12 @@ use Shopware\Core\Checkout\Order\SalesChannel\OrderService;
 use Shopware\Core\Framework\Context;
 use Symfony\Component\HttpFoundation\ParameterBag;
 
+/*
+
+To prevent overloaded classes and preserve clarity the functionality to change the current status of delivery and shipment
+has been moved to its own class.
+
+*/
 class OIOrderServiceUtils
 {
     /** @var OrderService $orderService */

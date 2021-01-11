@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-/** massive refactoring needed */
+
 namespace SynlabOrderInterface\Core\Api;
 
 use Shopware\Core\Framework\Context;
@@ -14,7 +14,6 @@ use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
-use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SynlabOrderInterface\Core\Api\Utilities\CSVFactory;
 use SynlabOrderInterface\Core\Api\Utilities\SFTPController;
@@ -59,6 +58,7 @@ class OrderInterfaceController extends AbstractController
         $this->systemConfigService = $systemConfigService;
         $this->repositoryContainer = $repositoryContainer;
         $this->oiUtils = $oiUtils;
+        $oiUtils->setContainer($this->container);
         $this->oiOrderServiceUtils = $oiOrderServiceUtils;
         $this->oimailserviceHelper = $oimailserviceHelper;
 
@@ -77,10 +77,12 @@ class OrderInterfaceController extends AbstractController
      * @Route("/api/v{version}/_action/synlab-order-interface/submitArticlebase", name="api.custom.synlab_order_interface.submitArticlebase", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * Writes file with full articlebase local and transmits the file to the designated sFTP server.
      */
     public function submitArticlebase(Context $context): Response
     { 
-        $products = $this->oiUtils->getProducts($this->repositoryContainer->getProductsRepository(), $context);
+        /** @var EntitySearchResult $products */
+        $products = $this->oiUtils->getAllProducts($this->container->get('product.repository'), $context);
 
         $csvString = '';
         foreach ($products as $product)
@@ -103,11 +105,12 @@ class OrderInterfaceController extends AbstractController
      * @Route("/api/v{version}/_action/synlab-order-interface/submitOrders", name="api.custom.synlab_order_interface.submitOrders", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * Checks for open orders and transmits them to the designated sFTP server
      */
     public function submitOrders(Context $context): Response
     {
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), false, $context); //TODO set to true 
+        $entities = $this->oiUtils->getOrderEntities($this->container->get('order.repository'), false, $context); //TODO define which orders should be transmitted
 
         if(count($entities) === 0){
             return new Response('',Response::HTTP_NO_CONTENT);
@@ -130,9 +133,10 @@ class OrderInterfaceController extends AbstractController
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
+    /* Extracts all necessary data of the order for the logistics partner throught the CSVFactory */
     private function generateFileContent(OrderEntity $order, string $orderNumber, $context): string
     {
-        // init exportVar
+        // init exportData variable, this will contain the billing/delivery address aswell as every line item of the order
         $exportData = [];
         /** @var string $orderID */
         $orderID = $order->getId(); // orderID used to search inside other Repositories for corresponding data
@@ -141,28 +145,30 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderCustomerEntity $orderCustomerEntity */
         $orderCustomerEntity = $order->getOrderCustomer();
         $eMailAddress = $orderCustomerEntity->getEmail();
-        // deliveryaddress
-        $exportData = $this->oiUtils->getDeliveryAddress($this->repositoryContainer->getOrderDeliveryAddressRepository(), $orderID, $eMailAddress, $context);// ordered products
-        $orderedProducts = $this->oiUtils->getOrderedProducts($this->repositoryContainer->getLineItemsRepository(), $orderID, $context);
+        // deliveryaddress 
+        $exportData = $this->oiUtils->getDeliveryAddress($this->container->get('order_address.repository'), $orderID, $eMailAddress, $context);
+        $orderedProducts = $this->oiUtils->getOrderedProducts($this->container->get('order_line_item.repository'), $orderID, $context);
         
         $fileContent = '';
         $orderContent = '';
         $i = 0;
         /** @var OrderLineItemEntity $product */
         foreach($orderedProducts as $product)
-        {
+        {//iterate through all products contained in this order
             if ($product->getIdentifier() === "INTERNAL_DISCOUNT")
-            {
+            {//ignore the internal discount added if the ordering customer is an internal customer to avoid errors due to missing articlenumber etc.
                 continue;
             }
-            array_push($exportData, $product);
-            $orderContent = $this->csvFactory->generateDetails($exportData, $orderNumber, $i, $orderContent, $context);   
+            array_push($exportData, $product); // adding the lineitems to $exportData variable
+            $orderContent = $this->csvFactory->generateDetails($exportData, $orderNumber, $i, $orderContent, $context); 
             $i++;
         }
         $fileContent = $this->csvFactory->generateHeader($exportData, $orderNumber, $fileContent, $orderCustomerEntity->getCustomerId(), $context);
-        $fileContent = $fileContent . $orderContent;
+        $fileContent = $fileContent . $orderContent; // concatenation of header, which has to be written after the contents, due to the order value being calculated after every line item has been processed
         return $fileContent;
     }
+
+    /* Writes the current order to disc with a unique name depending on the orderID */
     private function writeFile(string $orderNumber, $fileContent): string
     {
         $folderPath = $this->oiUtils->createTodaysFolderPath('SubmittedOrders/');
@@ -174,15 +180,12 @@ class OrderInterfaceController extends AbstractController
         file_put_contents($filePath,$fileContent);
         return $filePath;
     }
-    private function sendFile(string $filePath, string $destinationPath)
-    {
-        $this->sftpController->pushFile($filePath, $destinationPath);
-    }
 
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/pullRMWA", name="api.custom.synlab_order_interface.pullRMWA", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * Pulls feedback about goods dispatchment from logistics partner
      */
     public function pullRMWA(Context $context):Response
     {
@@ -198,51 +201,53 @@ class OrderInterfaceController extends AbstractController
      * @Route("/api/v{version}/_action/synlab-order-interface/checkRMWA", name="api.custom.synlab_order_interface.checkRMWA", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * Processes pulled feedback about goods dispatchment from logistics partner
      */
     public function checkRMWA(Context $context): Response
     {
+        $deleteFilesWhenFinished = false; // since a false bool value is null for shopware we predefine the false value... 
+        //get flag for deleting files when finished
         $deleteFilesWhenFinished = $this->systemConfigService->get('SynlabOrderInterface.config.deleteFilesAfterEvaluation');
-        
+        //create path for destination of transferred files
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA') . '/';
-        if (file_exists($path)) {
-            $files = scandir($path);
-            for($i = 2; $i < count($files); $i++)
+        if (file_exists($path)) { // prevent exception if the folder couldn't be created due to missing rights
+            $files = scandir($path); //get all files / folders 
+            for($i = 2; $i < count($files); $i++) //iterate through every file in the folder
             {
-                $filename = $files[$i];
-                $filenameContents = explode('_',$filename);
+                $filename = $files[$i]; // get the filename of current file
+                $filenameContents = explode('_',$filename); // get the parts of the filename separated by a delimiter, in this case ('_')
 
                 if($filenameContents[1] === 'STATUS') // status of order data procession
                 {
                     /** @var OrderEntity $order */
-                    $order = $this->getOrder('orderNumber', $filenameContents[3],$context);
+                    $order = $this->oiUtils->getOrder($this->container->get('order.repository'), 'orderNumber', $filenameContents[3],$context);
 
                     if($order == null)
-                    {
+                    {// wrong kind of file has been read, notify administration and prevent deletion of files
                         $deleteFilesWhenFinished = false;
-                        $this->sendErrorNotification('MAJOR ERROR','Major error occured. Received reply for non existant order. Received filename: ' . $filename);
+                        $this->sendErrorNotification('MAJOR ERROR','Major error occured. Received reply for non existant order. Received filename: ' . $filename . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         continue;
                     }
                     switch ($filenameContents[2])
                     {
                         case '003': // order cannot be changed (already packed, shipped, cancelled)
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WA Status 003','Status 003 "order cannot be changed (already packed, shipped, cancelled)" for order ' . $order->getOrderNumber());
+                            $this->sendErrorNotification('RM_WA Status 003','Status 003 "order cannot be changed (already packed, shipped, cancelled)" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         case '005': // cannot be cancelled because never created
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WA Status 005','Status 005 "cannot be cancelled because already processed or cancelled" for order ' . $order->getOrderNumber());
+                            $this->sendErrorNotification('RM_WA Status 005','Status 005 "cannot be cancelled because already processed or cancelled" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         case '006': // cannot be cancelled because already processed or cancelled
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WA Status 006','Status 006 "cannot be cancelled because already processed or cancelled" for order ' . $order->getOrderNumber());
+                            $this->sendErrorNotification('RM_WA Status 006','Status 006 "cannot be cancelled because already processed or cancelled" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         case '007': // order changed
-                            $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WA Status 007','Status 007 "order changed" for order ' . $order->getOrderNumber());
+                            // $this->sendErrorNotification('RM_WA Status 007','Status 007 "order changed" for order ' . $order->getOrderNumber());
                         break;
                         case '009': // minor error in order
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WA Status 009','Status 009 "minor error in order" for order ' . $order->getOrderNumber());
+                            $this->sendErrorNotification('RM_WA Status 009','Status 009 "minor error in order" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         case '010': // order sucessfully imported to rieck LFS
                             $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'process');
@@ -252,7 +257,7 @@ class OrderInterfaceController extends AbstractController
                         break;
                         case '999': // major error (file doesn't meet the expectations, e.g. unfitting fieldlengths, fieldformats, missing necessary fields)
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('MAJOR ERROR','Major error occured. One or more submitted files did not meet expectations and been rejected. Received filename: ' . $filename);
+                            $this->sendErrorNotification('MAJOR ERROR','Major error occured. One or more submitted files did not meet expectations and been rejected. Received filename: ' . $filename . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         default:
                         break;
@@ -269,21 +274,22 @@ class OrderInterfaceController extends AbstractController
                 {
 
                 }
-                else if ($filenameContents[1] === 'VLE') // packages loaded
+                else if ($filenameContents[1] === 'VLE') // packages loaded, we will have the tracking numbers and add them to the orderdelivery repository datafield
                 {
+                    /** @var EntityRepositoryInterface $orderRepositoryContainer */
+                    $orderDeliveryRepository = $this->container->get('order_delivery.repository');
+
                     /** @var OrderEntity $order */
-                    $order = $this->getOrder('orderNumber', $filenameContents[2],$context);
+                    $order = $this->oiUtils->getOrder($this->container->get('order.repository'), 'orderNumber', $filenameContents[2],$context);
 
                     /** @var string $orderDelivery */
-                    $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($order->getId(),$context);
+                    $orderDeliveryID = $this->oiUtils->getDeliveryEntityID($orderDeliveryRepository, $order->getId(),$context);
                     
                     /** @var Criteria $criteria */
                     $criteria = new Criteria();
                     $criteria->addFilter(new EqualsFilter('id', $orderDeliveryID));
-                    /** @var EntityRepositoryInterface $orderRepositoryContainer */
-                    $orderDeliveryRepositoryContainer = $this->repositoryContainer->getOrderDeliveryRepository();
                     /** @var EntitySearchResult $entities */
-                    $orderDeliveryEntities = $orderDeliveryRepositoryContainer->search($criteria, $context);
+                    $orderDeliveryEntities = $orderDeliveryRepository->search($criteria, $context);
                     /** @var OrderDeliveryEntity $orderDelivery */
                     $orderDelivery = $orderDeliveryEntities->first();
                     
@@ -295,25 +301,12 @@ class OrderInterfaceController extends AbstractController
                     for ($j = 1; $j < count($fileContentsByLine)-1; $j++)
                     {
                         $lineContents = explode(';', $fileContentsByLine[$j]);
-
-                        if(!$this->oiUtils->trackingnumberAtPositionExistsCk($lineContents[2], $lineContents[9], $context))
-                        {
-                            $trackingData[] = [
-                                'id' => Uuid::randomHex(),
-                                'orderId' => strval($order->getId()),
-                                'service' => $headContents[4],
-                                'position' => $lineContents[2],
-                                'trackingNumber' => $lineContents[9]
-                            ];
-                            array_push($trackingnumbers,$lineContents[9]);
-                        }
+                        array_push($trackingnumbers,$lineContents[9]);
                     }
                     $stateChanged = $this->oiOrderServiceUtils->updateOrderDeliveryStatus($orderDelivery, $orderDeliveryID, 'ship');
-                    if($stateChanged)
+                    if($stateChanged) // unly update tracking numbers if the parcel hasn't been shipped yet
                     {
-                        $this->repositoryContainer->getParcelTracking()->create($trackingData, $context);
-
-                        $this->oiUtils->updateTrackingNumbers($orderDeliveryID, $trackingnumbers, $context);
+                        $this->oiUtils->updateTrackingNumbers($orderDeliveryRepository, $orderDeliveryID, array_unique($trackingnumbers), $context);
                     }
                 }
             }
@@ -324,24 +317,13 @@ class OrderInterfaceController extends AbstractController
         }
         return new Response('',Response::HTTP_NO_CONTENT);
     }
-    private function getOrder($identifier, $filenameContents, $context): OrderEntity
-    {
-        /** @var Criteria $criteria */
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter($identifier, $filenameContents));
-        /** @var EntityRepositoryInterface $orderRepositoryContainer */
-        $orderRepositoryContainer = $this->repositoryContainer->getOrderRepository();
-        /** @var EntitySearchResult $entities */
-        $orderEntities = $orderRepositoryContainer->search($criteria, $context);
-        /** @var OrderEntity $order */
-        $order = $orderEntities->first();
-        return $order;
-    }
+    
 
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/pullRMWE", name="api.custom.synlab_order_interface.pullRMWE", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * Pulls feedback about goods receipt from logistics partner
      */
     public function pullRMWE(Context $context): Response
     {
@@ -356,16 +338,19 @@ class OrderInterfaceController extends AbstractController
      * @Route("/api/v{version}/_action/synlab-order-interface/checkRMWE", name="api.custom.synlab_order_interface.checkRMWE", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * Processes pulled feedback about goods receipt from logistics partner
      */
     public function checkRMWE(Context $context): Response
     {
+        $deleteFilesWhenFinished = false; // since a false bool value is null for shopware we predefine the false value... 
+        //get flag for deleting files when finished
         $deleteFilesWhenFinished = $this->systemConfigService->get('SynlabOrderInterface.config.deleteFilesAfterEvaluation');
 
-        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WE') . '/';
-        if (file_exists($path)) {
-            $files = scandir($path);
-            for ($i = 2; $i < count($files); $i++) {
-                $filename = $files[$i];
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WE') . '/'; // get path of pulled files
+        if (file_exists($path)) { // prevent exception if the folder couldn't be created due to missing rights
+            $files = scandir($path); //get all files / folders 
+            for ($i = 2; $i < count($files); $i++) { // iterate through every file in the folder
+                $filename = $files[$i]; 
                 $filenameContents = explode('_',$filename);
 
                 if($filenameContents[1] == 'STATUS')
@@ -374,35 +359,35 @@ class OrderInterfaceController extends AbstractController
                     {
                         case '001': //WEAvis couldn't be created
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WE Status 001','Status 001 "WEAvis could not be created" for order ' . $filenameContents[3]);
+                            $this->sendErrorNotification('RM_WE Status 001','Status 001 "WEAvis could not be created" for order ' . $filenameContents[3] . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         case '005': //WEAvis cannot be cancelled due to being not existant, already processed or cancelled
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WE Status 005','Status 005 "WEAvis cannot be cancelled due to being not existant, already processed or cancelled" for order ' . $filenameContents[3]);
+                            $this->sendErrorNotification('RM_WE Status 005','Status 005 "WEAvis cannot be cancelled due to being not existant, already processed or cancelled" for order ' . $filenameContents[3] . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         case '007': //WEAvis change processed
                             // $this->sendErrorNotification('RM_WE Status 007','Status 007 "WEAvis could not be created" for order ' . $filenameContents[3]);
                         break;
                         case '009': //WEAvis could not be processed, errors inside WEAvis
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WE Status 009','Status 009 "WEAvis could not be processed, errors inside WEAvis" for order ' . $filenameContents[3]);
+                            $this->sendErrorNotification('RM_WE Status 009','Status 009 "WEAvis could not be processed, errors inside WEAvis" for order ' . $filenameContents[3] . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         case '010': //WEAvis processed
                             // $this->sendErrorNotification('RM_WE Status 010','Status 010 "WEAvis could not be created" for order ' . $filenameContents[3]);
                         break;
                         case '999': //WEAvis message could not be processed, out of specification
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WE Status 999','Status 999 "WEAvis message could not be processed, out of specification" for order ' . $filenameContents[3]);
+                            $this->sendErrorNotification('RM_WE Status 999','Status 999 "WEAvis message could not be processed, out of specification" for order ' . $filenameContents[3] . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         default:
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WE Status unknown','unkown status reported');
+                            $this->sendErrorNotification('RM_WE Status unknown','unkown status reported' . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                     }
                 }
                 else if($filenameContents[1] == 'ERROR')
                 {
-                    
+                    $this->sendErrorNotification('RM_WE Status ERROR','Unknown Error reported' . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                 }
                 else if($filenameContents[1] == 'WKE')
                 {
@@ -420,12 +405,12 @@ class OrderInterfaceController extends AbstractController
                         $amountPostProcessing = $lineContents[10];
                         $amountOther = $lineContents[11];
                         
-                        $this->updateProduct($articleNumber, $amount, $amountAvailable);
+                        $this->updateProduct($articleNumber, $amount, $amountAvailable, $context);
 
                         if($amount != $amountAvailable)
                         {
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WE WKE','Damaged or otherwise unusable products reported: ' . $filename . '. Check back with logistics partner to keep stock information up to date.');
+                            $this->sendErrorNotification('RM_WE WKE','Damaged or otherwise unusable products reported: ' . $filename . '. Check back with logistics partner to keep stock information up to date.' . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         }
                     }
                 }
@@ -437,24 +422,15 @@ class OrderInterfaceController extends AbstractController
         }
         return new Response('',Response::HTTP_NO_CONTENT);
     }
-    private function getProduct(string $articleNumber): ProductEntity
-    {
-        /** @var EntityRepositoryInterface $productRepository */
-        $productRepository = $this->container->get('product.repository');
 
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('productNumber', $articleNumber));
-
-        $searchResult = $productRepository->search($criteria,Context::createDefaultContext());
-        return $searchResult->first();
-    }
-    private function updateProduct(string $articleNumber, $stockAddition, $availableStockAddition)
+    /* Updates stock according to logistics partner response */
+    private function updateProduct(string $articleNumber, $stockAddition, $availableStockAddition, $context)
     {
         /** @var EntityRepositoryInterface $productRepository */
         $productRepository = $this->container->get('product.repository');
 
         /** @var ProductEntity $productEntity */
-        $productEntity = $this->getProduct($articleNumber);
+        $productEntity = $this->oiUtils->getProduct($this->container->get('product.repository'), $articleNumber, $context);
 
         $currentStock = $productEntity->getStock();
         $currentStockAvailable = $productEntity->getAvailableStock();
@@ -474,6 +450,7 @@ class OrderInterfaceController extends AbstractController
      * @Route("/api/v{version}/_action/synlab-order-interface/pullArticleError", name="api.custom.synlab_order_interface.pullArticleError", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * Pulls the article error response from remote sFTP server
      */
     public function pullArticleError(Context $context): Response
     {
@@ -488,6 +465,7 @@ class OrderInterfaceController extends AbstractController
      * @Route("/api/v{version}/_action/synlab-order-interface/checkArticleError", name="api.custom.synlab_order_interface.checkArticleError", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * Checks pulled article error response, iterates through them and send a notification eMail to administration
      */
     public function checkArticleError(Context $context): Response
     {
@@ -501,7 +479,7 @@ class OrderInterfaceController extends AbstractController
                     $filename = $files[$i];
                     $filecontents = $filename . '|||' . $filecontents . file_get_contents($path . $filename);
                 }
-                $this->sendErrorNotification('Error: Article base','Error reported by logistics partner, submitted article base contains errors check logfile for further informations. Logfile: ' . $filecontents);
+                $this->sendErrorNotification('Error: Article base','Error reported by logistics partner, submitted article base contains errors check logfile for further informations.' . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents);
             }
         }
         return new Response('',Response::HTTP_NO_CONTENT);
@@ -510,6 +488,7 @@ class OrderInterfaceController extends AbstractController
      * @Route("/api/v{version}/_action/synlab-order-interface/pullBestand", name="api.custom.synlab_order_interface.pullBestand", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * Pulls the stock report from remote sFTP server
      */
     public function pullBestand(Context $context): Response
     {
@@ -524,9 +503,12 @@ class OrderInterfaceController extends AbstractController
      * @Route("/api/v{version}/_action/synlab-order-interface/checkBestand", name="api.custom.synlab_order_interface.checkBestand", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * Processes pulled stock report
      */
     public function checkBestand(Context $context): Response
     {
+        $deleteFilesWhenFinished = false; // since a false bool value is null for shopware we predefine the false value... 
+        //get flag for deleting files when finished
         $deleteFilesWhenFinished = $this->systemConfigService->get('SynlabOrderInterface.config.deleteFilesAfterEvaluation');
 
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand') . '/';
@@ -580,7 +562,7 @@ class OrderInterfaceController extends AbstractController
     public function modifyOrdersState(Context $context)
     {//reopen,process,complete,cancel
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($this->repositoryContainer->getOrderRepository(), false, $context);
+        $entities = $this->oiUtils->getOrderEntities($this->container->get('order.repository'), false, $context);
 
         if(count($entities) === 0){
             return;
@@ -592,6 +574,8 @@ class OrderInterfaceController extends AbstractController
         }
         return new Response('',Response::HTTP_NO_CONTENT);
     }
+
+    /* Sends an eMail to every entry in the plugin configuration inside the administration frontend */
     private function sendErrorNotification(string $errorSubject, string $errorMessage)
     {
         $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
@@ -612,6 +596,7 @@ class OrderInterfaceController extends AbstractController
             $this->oimailserviceHelper->sendMyMail($recipientAddress, $recipientName, $notificationSalesChannel, $errorSubject, $errorMessage);
         }
     }
+    /* Deletes recursive every file and folder in given path. So... be careful which path gets passed to this function */
     private function deleteFiles($dir)
     {
         $it = new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS);
@@ -636,6 +621,7 @@ class OrderInterfaceController extends AbstractController
      * @Route("/api/v{version}/_action/synlab-order-interface/orderInterfaceHelper", name="api.custom.synlab_order_interface.orderInterfaceHelper", methods={"POST"})
      * @param Context $context;
      * @return Response
+     * just my debug function called by insomnia, change what you want, it isn't used anywhere
      */
     public function orderInterfaceHelper(Context $context)
     {
@@ -663,7 +649,16 @@ class OrderInterfaceController extends AbstractController
         //     ],
         //     Context::createDefaultContext()
         // );
-        $this->sendErrorNotification('TestError','This is a test error message.');
+
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA') . '/WA_VLE_10042_20210105_084119090.csv';
+        // $filecontents = file_get_contents($path);
+        $this->sendErrorNotification('TestError','This is a test error message.' . PHP_EOL . 'Filecontents:' . PHP_EOL . $filecontents = file_get_contents($path));
         return new Response('',Response::HTTP_NO_CONTENT);
+    }
+
+    /* Transmission of local file to destination path on remote sFTP server */
+    private function sendFile(string $filePath, string $destinationPath)
+    {
+        $this->sftpController->pushFile($filePath, $destinationPath);
     }
 }

@@ -188,11 +188,12 @@ class CSVFactory
         return $translationEntity->getCustomFields();
     }
 
+    /* Generation of header for orders according to the documentation of the logistics partner */
     public function generateHeader(array $associativeArray, string $orderNumber, string $csvString, string $customerID, Context $context): string
     {
         $this->currentContext = $context;
         
-        $placeholder = '';
+        $placeholder = '';                                                                                                                      //FIELD-ID MAXLENGTH
         $csvString = $csvString . $this->truncateString($this->companyID,30) . '.WAAvis.Kopf' . ';';                                            //Kennung 30
         $csvString = $csvString . $this->truncateString($orderNumber,25) . ';';                                                                 //Auftragsnummer Kunde 25
         $csvString = $csvString . $this->truncateString($placeholder,8) . ';';                                                                  //Bereitstelldatum 8
@@ -235,13 +236,14 @@ class CSVFactory
         return $csvString;
     }
 
+    /* Generating of order details according to the documentation of the logistics partner */
     public function generateDetails(array $associativeArray, string $orderNumber, int $i, $csvString, Context $context): string
     {
         $this->currentContext = $context;
         $accessstring = '[' . $i . ']';
         /** @var OrderLineItemEntity $product */
         $product = $this->properyAccessor->getValue($associativeArray, $accessstring);
-        $placeholder = '';
+        $placeholder = '';                                                                                  //FIELD-ID MAXLENGTH
         $csvString = $csvString . $this->truncateString($this->companyID,30) . '.WAAvis.Detail' . ';';      //Kennung 30
         $csvString = $csvString . $this->truncateString($orderNumber,25) . ';';                             //Auftragsnummer Kunde 25
         $csvString = $csvString . $this->truncateString($product->getPosition(),6) . ';';                   //Auftragspositionsnummer Kunde 6

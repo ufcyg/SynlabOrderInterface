@@ -5,6 +5,11 @@ use Shopware\Core\Content\MailTemplate\Service\MailService;
 use Shopware\Core\Framework\Context;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBag;
 
+/*
+
+Contains the mail service and dispatches requested eMails
+
+*/
 class OrderInterfaceMailServiceHelper
 {
     /** @var MailService $mailserviceInterface */

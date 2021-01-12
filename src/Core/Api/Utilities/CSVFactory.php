@@ -110,11 +110,24 @@ class CSVFactory
             }
             else
             {$csvString = $csvString . ';';}
+            if(array_key_exists('custom_rieck_properties_batched',$customFields))
+            {
+                if($customFields['custom_rieck_properties_batched'])
+                {
+                    $csvString = $csvString . '1' . ';';
+                }
+                else
+                {
+                    $csvString = $csvString . '0' . ';';
+                }                                                           // Chargen Pflicht? (1)Length
+            }
+            else
+            {$csvString = $csvString . ';';}
         }
         else
-        {$csvString = $csvString . '0' . ';' . ';' . ';' . ';';}
+        {$csvString = $csvString . '0' . ';' . ';' . ';' . ';' . '0' . ';';}
         
-        $csvString = $csvString . '0' . ';';                                                                    // Chargen Pflicht? (1)Length
+        
         $csvString = $csvString . '0' . ';';                                                                    // S/N Erfassung WE? (1)Length
         $csvString = $csvString . '0' . ';';                                                                    // S/N Erfassung WA? (1)Length
         $csvString = $csvString . $placeholder . ';';                                                           // Einzelpreis (7.4)Length

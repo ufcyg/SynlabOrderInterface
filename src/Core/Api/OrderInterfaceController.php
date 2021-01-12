@@ -118,7 +118,7 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         foreach($entities as $orderID => $order)
         {
-            if(strcmp($$order->getStateMachineState()->getTechnicalName(),'open') != 0)
+            if(strcmp($order->getStateMachineState()->getTechnicalName(),'open') != 0)
             {
                 continue;
             }

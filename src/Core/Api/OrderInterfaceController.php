@@ -118,23 +118,32 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         foreach($entities as $orderID => $order)
         {
-            if(strcmp($order->getStateMachineState()->getTechnicalName(),'open') != 0)
-            {
-                continue;
-            }
-            $orderNumber = $order->getOrderNumber();
-            $fileContent = $this->generateFileContent($order, $orderNumber, $context);
 
-            $filePath = $this->writeFile($orderNumber, $fileContent);
+            if(strcmp($order->getStateMachineState()->getTechnicalName(),'open') == 0)
+            {
+                $orderNumber = $order->getOrderNumber();
+                $fileContent = $this->generateFileContent($order, $orderNumber, false, $context);
+    
+                $filePath = $this->writeFile($orderNumber, $fileContent);
+                
+                $this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");
+            }
+            else if (strcmp($order->getStateMachineState()->getTechnicalName(),'cancelled') == 0)
+            {
+                $orderNumber = $order->getOrderNumber();
+                $fileContent = $this->generateFileContent($order, $orderNumber, true, $context);
+    
+                $filePath = $this->writeFile($orderNumber, $fileContent);
+                
+                $this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");
+            }
             
-            $this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");
         }
-        
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
     /* Extracts all necessary data of the order for the logistics partner throught the CSVFactory */
-    private function generateFileContent(OrderEntity $order, string $orderNumber, $context): string
+    private function generateFileContent(OrderEntity $order, string $orderNumber, bool $orderCancelled, $context): string
     {
         // init exportData variable, this will contain the billing/delivery address aswell as every line item of the order
         $exportData = [];
@@ -160,7 +169,7 @@ class OrderInterfaceController extends AbstractController
                 continue;
             }
             array_push($exportData, $product); // adding the lineitems to $exportData variable
-            $orderContent = $this->csvFactory->generateDetails($exportData, $orderNumber, $i, $orderContent, $context); 
+            $orderContent = $this->csvFactory->generateDetails($exportData, $orderNumber, $i, $orderContent, $orderCancelled, $context); 
             $i++;
         }
         $fileContent = $this->csvFactory->generateHeader($exportData, $orderNumber, $fileContent, $orderCustomerEntity->getCustomerId(), $context);

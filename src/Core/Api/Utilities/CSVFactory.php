@@ -244,7 +244,7 @@ class CSVFactory
         $csvString = $csvString . $this->truncateString($placeholder,3) . ';';                                                                  //Frankatur 3
         $csvString = $csvString . $this->truncateString($placeholder,25) . ';';                                                                 //Frankatur, Zusatzinformation 25
         $csvString = $csvString . $this->getOrderValue($associativeArray) . ';';                                                                //Warenwert 7.4
-        $csvString = $csvString . $this->truncateString($placeholder,4) . ';';                                                                  //Versandart LFS 4
+        $csvString = $csvString . $this->truncateString('UPS',4) . ';';                                                                  //Versandart LFS 4
         $csvString = $csvString . $this->truncateString($placeholder,4) . ';';                                                                  //Servicecode LFS 4
         $csvString = $csvString . $this->truncateString($placeholder,6) . ';';                                                                  //Tour LFS 6
         $csvString = $csvString . '1' . ';';                                                                                                    //Schnittstelle LFS 1
@@ -255,7 +255,7 @@ class CSVFactory
     }
 
     /* Generating of order details according to the documentation of the logistics partner */
-    public function generateDetails(array $associativeArray, string $orderNumber, int $i, $csvString, Context $context): string
+    public function generateDetails(array $associativeArray, string $orderNumber, int $i, $csvString, bool $orderCancelled, Context $context): string
     {
         $this->currentContext = $context;
         $accessstring = '[' . $i . ']';
@@ -266,7 +266,15 @@ class CSVFactory
         $csvString = $csvString . $this->truncateString($orderNumber,25) . ';';                             //Auftragsnummer Kunde 25
         $csvString = $csvString . $this->truncateString($product->getPosition(),6) . ';';                   //Auftragspositionsnummer Kunde 6
         $csvString = $csvString . $this->truncateString($this->getArticleNumber($product),28) . ';';        //Artikelnummer 28
-        $csvString = $csvString . $product->getQuantity() . ';';                                            //Gesamtmenge in Basismengeneinheit 8.3
+        
+        if($orderCancelled)
+        {
+            $csvString = $csvString . '0' . ';';                                            //Gesamtmenge in Basismengeneinheit 8.3
+        }
+        else
+        {
+            $csvString = $csvString . $product->getQuantity() . ';';                                            //Gesamtmenge in Basismengeneinheit 8.3
+        }
         $csvString = $csvString . $this->truncateString($placeholder,46) . ';';                             //Externe NVE 46
         $csvString = $csvString . $this->truncateString($placeholder,8) . ';';                              //MHD 8
         $csvString = $csvString . $this->truncateString($placeholder,15) . ';';                             //Charge 15

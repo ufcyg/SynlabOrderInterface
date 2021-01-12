@@ -52,7 +52,7 @@ class CSVFactory
         $csvString = $csvString . $this->truncateString($placeholder,30) . ';';                                 // Artikelbezeichnung 3 (30)Length
         $csvString = $csvString . $this->truncateString($placeholder,6) . ';';                                  // Warengruppe (6)Length
         $csvString = $csvString . $this->truncateString($this->getUnit($product->getUnitId()),3) . ';';         // Basismengeneinheit* (3)Length
-        $csvString = $csvString . $placeholder . ';';                                                           // Basismengeneinheit, Gewicht in KG, netto (9.5)Length
+        $csvString = $csvString . str_replace('.',',',strval($product->getWeight())) . ';';                                                          // Basismengeneinheit, Gewicht in KG, netto (9.5)Length
         $csvString = $csvString . str_replace('.',',',strval($product->getWeight())) . ';';                     // Basismengeneinheit, Gewicht in KG, brutto (9.5)Length
         $csvString = $csvString . str_replace('.',',',strval($product->getLength())) . ';';                     // Basismengeneinheit, Länge in mm (5.2)Length
         $csvString = $csvString . str_replace('.',',',strval($product->getWidth())) . ';';                      // Basismengeneinheit, Breite in mm (5.2)Length

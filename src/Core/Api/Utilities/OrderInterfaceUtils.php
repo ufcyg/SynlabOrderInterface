@@ -240,6 +240,24 @@ class OrderInterfaceUtils
 
     }
 
+    // Checks if cancellation of the passed order has already been confirmed, returns true if entry already exists
+    public function OrderCancelConfirmationExistsCk(EntityRepositoryInterface $cancelConfirmationRepository, string $orderID,Context $context): bool
+    {
+        $criteria = new Criteria();
+
+        $criteria->addFilter(new EqualsFilter('orderId', $orderID));
+
+        /** @var EntitySearchResult $searchResult */
+        $searchResult = $cancelConfirmationRepository->search($criteria, $context);
+        
+        return count($searchResult) != 0 ? true : false;
+    }
+
+    public function asdwx(EntityRepositoryInterface $stockQSRepository)
+    {
+
+    }
+
     /** Set the value of container @return  self */ 
     public function setContainer($container)
     {

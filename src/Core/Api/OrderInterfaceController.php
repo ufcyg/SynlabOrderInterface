@@ -118,7 +118,6 @@ class OrderInterfaceController extends AbstractController
         /** @var OrderEntity $order */
         foreach($entities as $orderID => $order)
         {
-
             if(strcmp($order->getStateMachineState()->getTechnicalName(),'open') == 0)
             {
                 $orderNumber = $order->getOrderNumber();
@@ -130,6 +129,13 @@ class OrderInterfaceController extends AbstractController
             }
             else if (strcmp($order->getStateMachineState()->getTechnicalName(),'cancelled') == 0)
             {
+                // get repository for confirmed cancelled orders
+                $cancelledConfirmation = $this->container->get('as_cancelled_confirmation.repository');
+                //check if order has already been confirmed, if it isn't existant create new entity
+                if($this->oiUtils->OrderCancelConfirmationExistsCk($cancelledConfirmation, $order->getId(), $context))
+                {
+                    continue;
+                }
                 $orderNumber = $order->getOrderNumber();
                 $fileContent = $this->generateFileContent($order, $orderNumber, true, $context);
     
@@ -252,17 +258,17 @@ class OrderInterfaceController extends AbstractController
                             $this->sendErrorNotification('RM_WA Status 006','Status 006 "cannot be cancelled because already processed or cancelled" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         case '007': // order changed
-                            // $this->sendErrorNotification('RM_WA Status 007','Status 007 "order changed" for order ' . $order->getOrderNumber());
+                            $this->sendErrorNotification('RM_WA Status 007','Status 007 "order successfully changed" for order ' . $order->getOrderNumber());
                         break;
                         case '009': // minor error in order
                             $deleteFilesWhenFinished = false;
                             $this->sendErrorNotification('RM_WA Status 009','Status 009 "minor error in order" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                         break;
                         case '010': // order sucessfully imported to rieck LFS
-                            $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'process');
+                            $result = $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'process');
                         break;
                         case '040': // order packaging started, order cannot be changed anymore
-                            $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'complete');
+                            $result = $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'complete');
                         break;
                         case '999': // major error (file doesn't meet the expectations, e.g. unfitting fieldlengths, fieldformats, missing necessary fields)
                             $deleteFilesWhenFinished = false;
@@ -281,7 +287,25 @@ class OrderInterfaceController extends AbstractController
                 }
                 else if ($filenameContents[1] === 'STORNO') // cancellation(confirmation) by rieck
                 {
-
+                    /** @var OrderEntity $order */
+                    $order = $this->oiUtils->getOrder($this->container->get('order.repository'), 'orderNumber', $filenameContents[2],$context);
+                    $stateName = $order->getStateMachineState()->getTechnicalName();
+                    
+                    // get repository for confirmed cancelled orders
+                    $cancelledConfirmation = $this->container->get('as_cancelled_confirmation.repository');
+                    //check if order has already been confirmed, if it isn't existant create new entity
+                    if(!$this->oiUtils->OrderCancelConfirmationExistsCk($cancelledConfirmation, $order->getId(), $context))
+                    {
+                        $cancelledConfirmation->create([
+                            ['orderId' => $order->getId()],
+                        ],
+                        $context);
+                    }
+                    $result = $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'cancel');
+                    if($result)
+                    {
+                        $this->sendErrorNotification('Order cancelled by logistics partner','Order ' . $order->getOrderNumber() . ' has been cancelled by logistics partner. Communication needed. Received filename: ' . $filename . PHP_EOL . "Filecontents:" . PHP_EOL . file_get_contents($path . $filename));
+                    }
                 }
                 else if ($filenameContents[1] === 'VLE') // packages loaded, we will have the tracking numbers and add them to the orderdelivery repository datafield
                 {
@@ -396,7 +420,7 @@ class OrderInterfaceController extends AbstractController
                 }
                 else if($filenameContents[1] == 'ERROR')
                 {
-                    $this->sendErrorNotification('RM_WE Status ERROR','Unknown Error reported' . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
+                    $this->sendErrorNotification('RM_WE Status ERROR','Unknown Error reported' . PHP_EOL . "Filecontents: " . PHP_EOL . $filecontents = file_get_contents($path . $filename));
                 }
                 else if($filenameContents[1] == 'WKE')
                 {
@@ -412,9 +436,13 @@ class OrderInterfaceController extends AbstractController
                         $amountDamaged = $lineContents[8];
                         $amountClarification = $lineContents[9];
                         $amountPostProcessing = $lineContents[10];
-                        $amountOther = $lineContents[11];
+                        $expiredMHD = $lineContents[11];
+                        $amountOther = $lineContents[12];
                         
                         $this->updateProduct($articleNumber, $amount, $amountAvailable, $context);
+
+                        $stockQSRespository = $this->container->get('as_stock_qs.repository');
+
 
                         if($amount != $amountAvailable)
                         {
@@ -659,9 +687,33 @@ class OrderInterfaceController extends AbstractController
         //     Context::createDefaultContext()
         // );
 
-        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA') . '/WA_VLE_10042_20210105_084119090.csv';
-        // $filecontents = file_get_contents($path);
-        $this->sendErrorNotification('TestError','This is a test error message.' . PHP_EOL . 'Filecontents:' . PHP_EOL . $filecontents = file_get_contents($path));
+        // $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA') . '/WA_VLE_10042_20210105_084119090.csv';
+        // // $filecontents = file_get_contents($path);
+        // $this->sendErrorNotification('TestError','This is a test error message.' . PHP_EOL . 'Filecontents:' . PHP_EOL . $filecontents = file_get_contents($path));
+        
+        $stockQS = $this->container->get('as_stock_qs.repository');
+        $cancelledConfirmation = $this->container->get('as_cancelled_confirmation.repository');
+        
+        // $cancelledConfirmation->create([
+        //     ['orderId' => 'asdwx'],
+        // ],
+        //     $context
+        // );
+        
+        /*
+            (new IdField('id','id'))->addFlags(new Required(), new PrimaryKey()) ,
+                new StringField('product_id','productId'),
+                new IntField('faulty','faulty'),
+                new IntField('clarification','clarification'),
+                new IntField('postprocessing','postprocessing'),
+                new IntField('expired_mhd','expiredMhd'),
+                new IntField('other','other')
+        */
+        // $stockQS->create([
+        //     ['productId' => 'asdwx1', 'faulty' => 1, 'clarification' => 2, 'postprocessing' => 3, 'expiredMhd' => 4, 'other' => 5],
+        // ],
+        //     $context
+        // );
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 

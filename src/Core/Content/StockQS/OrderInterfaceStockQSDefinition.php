@@ -37,7 +37,6 @@ class OrderInterfaceStockQSDefinition extends EntityDefinition
                 new IntField('faulty','faulty'),
                 new IntField('clarification','clarification'),
                 new IntField('postprocessing','postprocessing'),
-                new IntField('expired_mhd','expiredMhd'),
                 new IntField('other','other')
             ]
         );

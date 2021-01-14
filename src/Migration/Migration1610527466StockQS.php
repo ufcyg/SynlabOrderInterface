@@ -20,7 +20,6 @@ class Migration1610527466StockQS extends MigrationStep
             `faulty`    INTEGER NOT NULL,
             `clarification`    INTEGER NOT NULL,
             `postprocessing`    INTEGER NOT NULL,
-            `expired_mhd`    INTEGER NOT NULL,
             `other`    INTEGER NOT NULL,
             `created_at`    DATETIME(3),
             `updated_at`    DATETIME(3)

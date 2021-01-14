@@ -18,8 +18,6 @@ class OrderInterfaceStockQSEntity extends Entity
     /** @var int */
     protected $postprocessing;
     /** @var int */
-    protected $expiredMhd;
-    /** @var int */
     protected $other;
 
     /**

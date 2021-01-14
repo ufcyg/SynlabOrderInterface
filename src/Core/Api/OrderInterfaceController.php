@@ -2,6 +2,7 @@
 
 namespace SynlabOrderInterface\Core\Api;
 
+use Exception;
 use Shopware\Core\Framework\Context;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
@@ -25,6 +26,7 @@ use RecursiveIteratorIterator;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceMailServiceHelper;
+use SynlabOrderInterface\Core\Content\StockQS\OrderInterfaceStockQSEntity;
 
 /**
  * @RouteScope(scopes={"api"})
@@ -433,15 +435,13 @@ class OrderInterfaceController extends AbstractController
                         $articleNumber = $lineContents[5];
                         $amount = $lineContents[6];
                         $amountAvailable = $lineContents[7];
-                        $amountDamaged = $lineContents[8];
-                        $amountClarification = $lineContents[9];
-                        $amountPostProcessing = $lineContents[10];
-                        $expiredMHD = $lineContents[11];
-                        $amountOther = $lineContents[12];
+                        // $amountDamaged = $lineContents[8];
+                        // $amountClarification = $lineContents[9];
+                        // $amountPostProcessing = $lineContents[10];
+                        // $amountOther = $lineContents[11];
                         
                         $this->updateProduct($articleNumber, $amount, $amountAvailable, $context);
-
-                        $stockQSRespository = $this->container->get('as_stock_qs.repository');
+                        $this->updateQSStock($lineContents, $articleNumber, $context);
 
 
                         if($amount != $amountAvailable)
@@ -483,6 +483,55 @@ class OrderInterfaceController extends AbstractController
             Context::createDefaultContext()
         );
     }
+
+    /* */
+    private function updateQSStock(array $lineContents, string $articleNumber, Context $context)
+    {
+        /** @var EntityRepositoryInterface $stockQSRespository */
+        $stockQSRespository = $this->container->get('as_stock_qs.repository');
+        /** @var EntityRepositoryInterface $productRepository */
+        $productRepository = $this->container->get('product.repository');
+        $product = $this->oiUtils->getProduct($productRepository, $articleNumber, $context);
+
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productId',$product->getId()));
+
+        
+        /** @var EntitySearchResult $searchResult */
+        $searchResult = null;
+        
+        $searchResult = $stockQSRespository->search($criteria,$context);
+            
+        if(count($searchResult) == 0)
+        {
+            // generate new entry
+            $stockQSRespository->create([
+                ['productId' => $product->getId(), 'faulty' => intval($lineContents[8]), 'clarification' => intval($lineContents[9]), 'postprocessing' => intval($lineContents[10]), 'other' => intval($lineContents[11])],
+            ],
+                $context
+            );
+            return;
+        }
+        else
+        {
+            // update entry
+            $entry = $searchResult->first();
+
+            /** @var OrderInterfaceStockQSEntity $stockQSEntity */
+            $stockQSEntity = $searchResult->first();
+            $faulty = $stockQSEntity->getFaulty();
+            $clarification = $stockQSEntity->getClarification();
+            $postprocessing = $stockQSEntity->getPostprocessing();
+            $other = $stockQSEntity->getOther();
+
+            $stockQSRespository->update([
+                ['id' => $entry->getId(), 'productId' => $product->getId(), 'faulty' => intval($lineContents[8]) + $faulty, 'clarification' => intval($lineContents[9]) + $clarification, 'postprocessing' => intval($lineContents[10]) + $postprocessing, 'other' => intval($lineContents[11]) + $other],
+            ],
+                $context
+            );
+        }
+    }
+
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/pullArticleError", name="api.custom.synlab_order_interface.pullArticleError", methods={"POST"})
      * @param Context $context;

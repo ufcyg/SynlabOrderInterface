@@ -447,7 +447,7 @@ class OrderInterfaceController extends AbstractController
                         if($amount != $amountAvailable)
                         {
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WE WKE','Damaged or otherwise unusable products reported: ' . $filename . '. Check back with logistics partner to keep stock information up to date.' . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
+                            $this->sendErrorNotification('RM_WE WKE','Damaged or otherwise unusable products reported: ' . $filename . '. Check back with logistics partner to keep stock information up to date.' . PHP_EOL . "Filecontents:" . PHP_EOL . $fileContentsByLine[0] . PHP_EOL . $fileContentsByLine[$j]);
                         }
                     }
                 }
@@ -487,8 +487,8 @@ class OrderInterfaceController extends AbstractController
     /* */
     private function updateQSStock(array $lineContents, string $articleNumber, Context $context)
     {
-        /** @var EntityRepositoryInterface $stockQSRespository */
-        $stockQSRespository = $this->container->get('as_stock_qs.repository');
+        /** @var EntityRepositoryInterface $stockQSRepository */
+        $stockQSRepository = $this->container->get('as_stock_qs.repository');
         /** @var EntityRepositoryInterface $productRepository */
         $productRepository = $this->container->get('product.repository');
         $product = $this->oiUtils->getProduct($productRepository, $articleNumber, $context);
@@ -500,12 +500,12 @@ class OrderInterfaceController extends AbstractController
         /** @var EntitySearchResult $searchResult */
         $searchResult = null;
         
-        $searchResult = $stockQSRespository->search($criteria,$context);
+        $searchResult = $stockQSRepository->search($criteria,$context);
             
         if(count($searchResult) == 0)
         {
             // generate new entry
-            $stockQSRespository->create([
+            $stockQSRepository->create([
                 ['productId' => $product->getId(), 'faulty' => intval($lineContents[8]), 'clarification' => intval($lineContents[9]), 'postprocessing' => intval($lineContents[10]), 'other' => intval($lineContents[11])],
             ],
                 $context
@@ -523,8 +523,8 @@ class OrderInterfaceController extends AbstractController
             $clarification = $stockQSEntity->getClarification();
             $postprocessing = $stockQSEntity->getPostprocessing();
             $other = $stockQSEntity->getOther();
-
-            $stockQSRespository->update([
+            
+            $stockQSRepository->update([
                 ['id' => $entry->getId(), 'productId' => $product->getId(), 'faulty' => intval($lineContents[8]) + $faulty, 'clarification' => intval($lineContents[9]) + $clarification, 'postprocessing' => intval($lineContents[10]) + $postprocessing, 'other' => intval($lineContents[11]) + $other],
             ],
                 $context
@@ -590,6 +590,11 @@ class OrderInterfaceController extends AbstractController
      * @param Context $context;
      * @return Response
      * Processes pulled stock report
+     * QS Marks
+     * faulty - DF
+     * postprocessing - NB
+     * other - SO
+     * clarification - KL
      */
     public function checkBestand(Context $context): Response
     {
@@ -606,27 +611,290 @@ class OrderInterfaceController extends AbstractController
 
                 switch ($filenameContents[0])
                     {
+                        case 'QSK':
+                            $filecontents = file_get_contents($path . $filename);
+                            $fileContentsByLine = explode(PHP_EOL,$filecontents);       
+                            foreach ($fileContentsByLine as $contentLine) {
+                                $lineContents = explode(';', $contentLine);
+                                if(count($lineContents) <= 1)
+                                {
+                                    continue;
+                                }
+
+
+                                switch($lineContents[7])
+                                {
+                                    case 'KL': // klärfall / clarification
+                                        switch($lineContents[9])
+                                        {
+                                            case 'NB': // to postprocessing
+                                                $this->processQSK($lineContents[1],0,-intval($lineContents[5]),intval($lineContents[5]),0,0,$context); // intval($lineContents[5])
+                                            break;
+                                            case 'SO': // to other
+                                                $this->processQSK($lineContents[1],0,-intval($lineContents[5]),0,intval($lineContents[5]),0,$context); // intval($lineContents[5])
+                                            break;
+                                            case 'DF': // to faulty
+                                                $this->processQSK($lineContents[1],intval($lineContents[5]),-intval($lineContents[5]),0,0,0,$context); // intval($lineContents[5])
+                                            break;
+                                            default:
+                                            $this->processQSK($lineContents[1],0,-intval($lineContents[5]),0,0,intval($lineContents[5]),$context);
+                                            break;
+                                        }
+                                    break;
+                                    case 'NB': // Nachbearbeitung / postprocessing
+                                        switch($lineContents[9])
+                                        {
+                                            case 'KL': // to clarification
+                                                $this->processQSK($lineContents[1],0,intval($lineContents[5]),-intval($lineContents[5]),0,0,$context); // intval($lineContents[5])
+                                            break;
+                                            case 'SO': // to other
+                                                $this->processQSK($lineContents[1],0,0,-intval($lineContents[5]),intval($lineContents[5]),0,$context); // intval($lineContents[5])
+                                            break;
+                                            case 'DF': // to faulty
+                                                $this->processQSK($lineContents[1],intval($lineContents[5]),0,-intval($lineContents[5]),0,0,$context); // intval($lineContents[5])
+                                            break;
+                                            default:
+                                                $this->processQSK($lineContents[1],0,0,-intval($lineContents[5]),0,intval($lineContents[5]),$context); // intval($lineContents[5])
+                                            break;
+                                        }
+                                    break;
+                                    case 'SO': // Sonstige / otherwise
+                                        switch($lineContents[9])
+                                        {
+                                            case 'NB': // to postprocessing
+                                                $this->processQSK($lineContents[1],0,0,intval($lineContents[5]),-intval($lineContents[5]),0,$context); // intval($lineContents[5])
+                                            break;
+                                            case 'KL': // to clarification
+                                                $this->processQSK($lineContents[1],0,intval($lineContents[5]),0,-intval($lineContents[5]),0,$context); // intval($lineContents[5])
+                                            break;
+                                            case 'DF': // to faulty
+                                                $this->processQSK($lineContents[1],intval($lineContents[5]),0,0,-intval($lineContents[5]),0,$context); // intval($lineContents[5])
+                                            break;
+                                            default:
+                                                $this->processQSK($lineContents[1],0,0,0,-intval($lineContents[5]),intval($lineContents[5]),$context); // intval($lineContents[5])
+                                            break;
+                                        }
+                                    break;
+                                    case 'DF': // Defekt // faulty
+                                        switch($lineContents[9])
+                                        {
+                                            case 'NB': // to postprocessing
+                                                $this->processQSK($lineContents[1],-intval($lineContents[5]),0,intval($lineContents[5]),0,0,$context); // intval($lineContents[5])
+                                            break;
+                                            case 'SO': // to other
+                                                $this->processQSK($lineContents[1],-intval($lineContents[5]),0,0,intval($lineContents[5]),0,$context); // intval($lineContents[5])
+                                            break;
+                                            case 'KL': // to clarification
+                                                $this->processQSK($lineContents[1],-intval($lineContents[5]),intval($lineContents[5]),0,0,0,$context); // intval($lineContents[5])
+                                            break;
+                                            default:
+                                                $this->processQSK($lineContents[1],-intval($lineContents[5]),0,0,0,intval($lineContents[5]),$context); // intval($lineContents[5])
+                                            break;
+                                        }
+                                    break;
+                                    default:
+                                        switch($lineContents[9])
+                                        {
+                                            case 'KL': // to clarification
+                                                $this->processQSK($lineContents[1],0,intval($lineContents[5]),0,0,-intval($lineContents[5]),$context); // intval($lineContents[5])
+                                            break;
+                                            case 'NB': // to postprocessing
+                                                $this->processQSK($lineContents[1],0,0,intval($lineContents[5]),0,-intval($lineContents[5]),$context); // intval($lineContents[5])
+                                            break;
+                                            case 'SO': // to other
+                                                $this->processQSK($lineContents[1],0,0,0,intval($lineContents[5]),-intval($lineContents[5]),$context); // intval($lineContents[5])
+                                            break;
+                                            case 'DF': // to faulty
+                                                $this->processQSK($lineContents[1],intval($lineContents[5]),0,0,0,-intval($lineContents[5]),$context); // intval($lineContents[5])
+                                            break;
+                                        }
+                                    break;
+                                }
+                            }
+                        break;
                         case 'BESTAND': // Daily report of current available items
                             $filecontents = file_get_contents($path . $filename);
                             $fileContentsByLine = explode(PHP_EOL,$filecontents);       
                             foreach ($fileContentsByLine as $contentLine)
                             {
+                                /** @var bool $discrepancy */
+                                $discrepancy = false;
                                 $lineContents = explode(';', $contentLine);
-                                // $this->updateProduct($lineContents[1], $lineContents[4], $lineContents[5], $context);
+                                if(count($lineContents) <= 1)
+                                {
+                                    continue;
+                                }
+                                $available = intval($lineContents[5]);
+                                $qsFaulty = intval($lineContents[6]);
+                                $qsClarification = intval($lineContents[7]);
+                                $qsPostprocessing = intval($lineContents[8]);
+                                $qsOther = intval($lineContents[9]);
+                                
                                 //TODO COMPARE
-                                $deleteFilesWhenFinished = false;
-                            }
-                            
-                            //TODO caclulate discrepancy, email notification admin
-                            
+                                $articleNumber = $lineContents[1];
+
+                                $productRepository = $this->container->get('product.repository');
+                                $stockQSRepository = $this->container->get('as_stock_qs.repository');
+
+                                /** @var ProductEntity $productEntity */
+                                $productEntity = $this->oiUtils->getProduct($productRepository, $articleNumber, $context);
+
+                                $criteria = new Criteria();
+                                $criteria->addFilter(new EqualsFilter('productId',$productEntity->getId()));
+
+                                $searchResult = $stockQSRepository->search($criteria,$context);
+                                /** @var OrderInterfaceStockQSEntity $stockQSEntity */
+                                $stockQSEntity = $searchResult->first();
+                                if($productEntity->getStock() != $available)
+                                {
+                                    $discrepancy = true;
+                                }
+                                if($stockQSEntity->getFaulty() != $qsFaulty)
+                                {
+                                    $discrepancy = true;
+                                }
+                                if($stockQSEntity->getClarification() != $qsClarification)
+                                {
+                                    $discrepancy = true;
+                                }
+                                if($stockQSEntity->getPostprocessing() != $qsPostprocessing)
+                                {
+                                    $discrepancy = true;
+                                }
+                                if($stockQSEntity->getOther() != $qsOther)
+                                {
+                                    $discrepancy = true;
+                                }
+                                if($discrepancy)
+                                {
+                                    $deleteFilesWhenFinished = false;
+                                    $this->sendErrorNotification('Stock Feedback Discrepancy','Discrepancies found in stock feedback check logfile for further informations.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                                }
+                            }                            
                         break;
                         case 'BS+': // addition of currently available items (items lost but found, etc.)
-                            //TODO
+                            $filecontents = file_get_contents($path . $filename);
+                            $fileContentsByLine = explode(PHP_EOL,$filecontents); 
+                            foreach ($fileContentsByLine as $contentLine) {
+                                $lineContents = explode(';', $contentLine);
+                                if(count($lineContents) <= 1)
+                                {
+                                    continue;
+                                }
+                                $articleNumber = $lineContents[1];
+                                $productRepository = $this->container->get('product.repository');
+                                /** @var EntityRepositoryInterface $stockQSRepository */
+                                $stockQSRepository = $this->container->get('as_stock_qs.repository');
+                                $productEntity = $this->oiUtils->getProduct($productRepository, $articleNumber, $context);
+
+                                switch($lineContents[7])
+                                {
+                                    case 'KL': // klärfall / clarification
+
+                                        $this->updateQSStockBS(0,0,0,intval($lineContents[5]),$articleNumber,$context);
+                                        // $stockQSRepository->update([
+                                        //     ['id' => $stockQSEntity->getId(), 'clarification' => $current + intval($lineContents[5])],
+                                        // ],$context);
+                                        $this->sendErrorNotification('Stock Addition','Products added, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                                    break;
+                                    case 'NB': // Nachbearbeitung / postprocessing
+                                        
+                                        $this->updateQSStockBS(0,intval($lineContents[5]),0,0,$articleNumber,$context);
+                                        // $stockQSRepository->update([
+                                        //     ['id' => $stockQSEntity->getId(), 'postprocessing' => $current + intval($lineContents[5])],
+                                        // ],$context);
+                                        $this->sendErrorNotification('Stock Addition','Products added, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                                    break;
+                                    case 'SO': // Sonstige / other
+                                        
+                                        $this->updateQSStockBS(0,0,intval($lineContents[5]),0,$articleNumber,$context);
+                                        // $stockQSRepository->update([
+                                        //     ['id' => $stockQSEntity->getId(), 'other' => $current + intval($lineContents[5])],
+                                        // ],$context);
+                                        $this->sendErrorNotification('Stock Addition','Products added, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                                    break;
+                                    case 'DF': // Defekt // faulty
+                                        
+                                        $this->updateQSStockBS(intval($lineContents[5]),0,0,0,$articleNumber,$context);
+                                        // $stockQSRepository->update([
+                                        //     ['id' => $stockQSEntity->getId(), 'faulty' => $current + intval($lineContents[5])],
+                                        // ],$context);
+                                        $this->sendErrorNotification('Stock Addition','Products added, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                                    break;
+                                    default:
+                                        $current = $productEntity->getStock();
+                                        $productRepository->update([
+                                            ['id' => $productEntity->getId(), 'stock' => $current + intval($lineContents[5])],
+                                        ],$context);
+                                    break;
+                                }
+                            }
                         break;
                         case 'BS-': // subtraction of currently available items (lost, stolen, destroyed, etc.)
-                            //TODO
+                            $filecontents = file_get_contents($path . $filename);
+                            $fileContentsByLine = explode(PHP_EOL,$filecontents);       
+                            foreach ($fileContentsByLine as $contentLine) {
+                                $lineContents = explode(';', $contentLine);
+                                if(count($lineContents) <= 1)
+                                {
+                                    continue;
+                                }
+
+                                $articleNumber = $lineContents[1];
+                                $productRepository = $this->container->get('product.repository');
+                                /** @var EntityRepositoryInterface $stockQSRepository */
+                                $stockQSRepository = $this->container->get('as_stock_qs.repository');
+                                $productEntity = $this->oiUtils->getProduct($productRepository, $articleNumber, $context);
+                                switch($lineContents[7])
+                                {
+                                    case 'KL': // klärfall / clarification
+                                        
+                                        $this->updateQSStockBS(0,0,0,intval($lineContents[5]),$articleNumber,$context);
+                                        // $stockQSRepository->update([
+                                        //     ['id' => $stockQSEntity->getId(), 'clarification' => $current - intval($lineContents[5])],
+                                        // ],$context);
+                                        $this->sendErrorNotification('Stock Subtraction','Products removed, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                                    break;
+                                    case 'NB': // Nachbearbeitung / postprocessing
+                                        
+                                        $this->updateQSStockBS(0,intval($lineContents[5]),0,0,$articleNumber,$context);
+                                        // $stockQSRepository->update([
+                                        //     ['id' => $stockQSEntity->getId(), 'postprocessing' => $current - intval($lineContents[5])],
+                                        // ],$context);
+                                        $this->sendErrorNotification('Stock Subtraction','Products removed, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                                    break;
+                                    case 'SO': // Sonstige / other
+                                        
+                                        $this->updateQSStockBS(0,0,intval($lineContents[5]),0,$articleNumber,$context);
+                                        // $stockQSRepository->update([
+                                        //     ['id' => $stockQSEntity->getId(), 'other' => $current - intval($lineContents[5])],
+                                        // ],$context);
+                                        $this->sendErrorNotification('Stock Subtraction','Products removed, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                                    break;
+                                    case 'DF': // Defekt // faulty
+                                        
+                                        $this->updateQSStockBS(intval($lineContents[5]),0,0,0,$articleNumber,$context);
+                                        // $stockQSRepository->update([
+                                        //     ['id' => $stockQSEntity->getId(), 'faulty' => $current - intval($lineContents[5])],
+                                        // ],$context);
+                                        $this->sendErrorNotification('Stock Subtraction','Products removed, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                                    break;
+                                    default:
+                                        $current = $productEntity->getStock();
+
+                                        $productRepository->update([
+                                            ['id' => $productEntity->getId(), 'stock' => $current - intval($lineContents[5])],
+                                        ],$context);
+                                    break;
+                                }
+                            }
                         break;
                         default:
+                            $filecontents = file_get_contents($path . $filename);
+                            $fileContentsByLine = explode(PHP_EOL,$filecontents);       
+                            foreach ($fileContentsByLine as $contentLine) {
+                                $lineContents = explode(';', $contentLine);
+                            }
                         break;
                     }
             }
@@ -636,6 +904,108 @@ class OrderInterfaceController extends AbstractController
             $this->deleteFiles($path);
         }
         return new Response('',Response::HTTP_NO_CONTENT);
+    }
+
+    private function updateQSStockBS(int $faulty, int $postprocessing, int $other, int $clarification, string $articleNumber, Context $context)
+    {
+        /** @var EntityRepositoryInterface $productRepository */
+        $productRepository = $this->container->get('product.repository');
+        /** @var EntityRepositoryInterface $stockQSRepository */
+        $stockQSRepository = $this->container->get('as_stock_qs.repository');
+
+        $productEntity = $this->oiUtils->getProduct($productRepository, $articleNumber, $context);
+        $productID = $productEntity->getId();
+
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productId',$productID));
+        
+        /** @var EntitySearchResult $searchResult */
+        $searchResult = null;
+        
+        $searchResult = $stockQSRepository->search($criteria,$context);
+        if(count($searchResult) == 0)
+        {
+            // generate new entry
+            $stockQSRepository->create([
+                ['productId' => $productID, 'faulty' => $faulty, 'clarification' => $clarification, 'postprocessing' => $postprocessing, 'other' => $other],
+            ], $context);
+            return;
+        }
+        else
+        {
+            // update entry
+            $entry = $searchResult->first();
+
+            /** @var OrderInterfaceStockQSEntity $stockQSEntity */
+            $stockQSEntity = $searchResult->first();
+            $currentFaulty = $stockQSEntity->getFaulty();
+            $currentClarification = $stockQSEntity->getClarification();
+            $currentPostprocessing = $stockQSEntity->getPostprocessing();
+            $currentOther = $stockQSEntity->getOther();
+            
+            $stockQSRepository->update([
+                ['id' => $entry->getId(), 'productId' => $productID, 'faulty' => $currentFaulty + $faulty, 'clarification' => $currentClarification + $clarification, 'postprocessing' => $currentPostprocessing + $postprocessing, 'other' => $currentOther + $other],
+            ],
+                $context
+            );
+        }
+    }
+
+    private function processQSK(string $articleNumber, int $faulty, int $clarification, int $postprocessing, int $other, int $stock ,Context $context)
+    {
+        /** @var EntityRepositoryInterface $stockQSRepository */
+        $stockQSRepository = $this->container->get('as_stock_qs.repository');
+        /** @var EntityRepositoryInterface $productRepository */
+        $productRepository = $this->container->get('product.repository');
+        /** @var ProductEntity $product */
+        $product = $this->oiUtils->getProduct($productRepository,$articleNumber,$context);
+        $productID = $product->getId();
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productId',$productID));
+
+        $searchResult = null;
+        $searchResult = $stockQSRepository->search($criteria,$context);
+        
+
+        if(count($searchResult) == 0)
+        {
+            if($faulty < 0 || $clarification < 0 || $postprocessing < 0 || $other < 0)
+            {
+                $this->sendErrorNotification('QSK error','major error, check logs. A new stock qs entry tried to be created with negative values.');
+                return;
+            }
+            $stockQSRepository->create([
+                ['productId' => $productID, 'faulty' => $faulty, 'clarification' => $clarification, 'postprocessing' => $postprocessing, 'other' => $other],
+            ], $context);
+        }
+        else
+        {
+            /** @var OrderInterfaceStockQSEntity $stockQSEntity */
+            $stockQSEntity = $searchResult->first();
+            $currentFaulty = $stockQSEntity->getFaulty();
+            $currentClarification = $stockQSEntity->getClarification();
+            $currentPostprocessing = $stockQSEntity->getPostprocessing();
+            $currentOther = $stockQSEntity->getOther();
+
+            $stockQSRepository->update([
+                ['id' => $stockQSEntity->getId(), 'faulty' => $currentFaulty + $faulty, 'clarification' => $currentClarification + $clarification, 'postprocessing' => $currentPostprocessing + $postprocessing, 'other' => $currentOther + $other],
+            ], $context);
+
+            
+
+            $currentStock = $product->getStock();
+            $newStockValue = $currentStock + $stock;
+            $productRepository->update(
+                [
+                    [ 'id' => $product->getId(), 'stock' => $newStockValue ],
+                ],
+                $context
+            );
+            if($newStockValue < 0)
+            {
+                $this->sendErrorNotification('QSK error','New stockvalue is below 0, check logs and data' . $product->getProductNumber());
+            }
+        }
     }
 
     //// helper

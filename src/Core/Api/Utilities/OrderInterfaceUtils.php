@@ -21,6 +21,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\RangeFilter;
 use Shopware\Core\System\Country\CountryEntity;
+use SynlabOrderInterface\Core\Content\StockQS\OrderInterfaceStockQSEntity;
 
 class OrderInterfaceUtils
 {
@@ -98,6 +99,15 @@ class OrderInterfaceUtils
         $criteria->addFilter(new EqualsFilter('productNumber', $articleNumber));
 
         $searchResult = $productRepository->search($criteria,$context);
+        return $searchResult->first();
+    }
+    /* Returns a specific stock qs entry defined by the productId */
+    public function getStockQSEntity(EntityRepositoryInterface $stockQSEntity, string $productID, Context $context): OrderInterfaceStockQSEntity
+    {
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productId', $productID));
+
+        $searchResult = $stockQSEntity->search($criteria,$context);
         return $searchResult->first();
     }
 
@@ -251,11 +261,6 @@ class OrderInterfaceUtils
         $searchResult = $cancelConfirmationRepository->search($criteria, $context);
         
         return count($searchResult) != 0 ? true : false;
-    }
-
-    public function asdwx(EntityRepositoryInterface $stockQSRepository)
-    {
-
     }
 
     /** Set the value of container @return  self */ 

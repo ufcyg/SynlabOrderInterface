@@ -34,29 +34,64 @@ class SynlabOrderInterface extends Plugin
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData', 0777, true);
         }
+        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData')) {
+            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive', 0777, true);
+        }
+
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/Articlebase')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Articlebase', 0777, true);
         }
+        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/Articlebase')) {
+            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/Articlebase', 0777, true);
+        }
+
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/SubmittedOrders')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/SubmittedOrders', 0777, true);
         }
+        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/SubmittedOrders')) {
+            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/SubmittedOrders', 0777, true);
+        }
+
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply', 0777, true);
         }
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply')) {
+            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/ReceivedStatusReply', 0777, true);
+        }
+
+        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply', 0777, true);
         }
+        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply')) {
+            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/ReceivedStatusReply', 0777, true);
+        }
+
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/Artikel_Error')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/Artikel_Error', 0777, true);
         }
+        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/Artikel_Error')) {
+            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/ReceivedStatusReply/Artikel_Error', 0777, true);
+        }
+
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/RM_WA')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/RM_WA', 0777, true);
         }
+        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/RM_WA')) {
+            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/ReceivedStatusReply/RM_WA', 0777, true);
+        }
+
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/RM_WE')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/RM_WE', 0777, true);
         }
+        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/RM_WE')) {
+            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/ReceivedStatusReply/RM_WE', 0777, true);
+        }
+
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/Bestand')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/Bestand', 0777, true);
+        }
+        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply/Bestand')) {
+            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/ReceivedStatusReply/Bestand', 0777, true);
         }
     }
 

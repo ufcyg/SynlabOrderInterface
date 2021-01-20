@@ -243,29 +243,29 @@ class OrderInterfaceController extends AbstractController
                     if($order == null)
                     {// wrong kind of file has been read, notify administration and prevent deletion of files
                         $deleteFilesWhenFinished = false;
-                        $this->sendErrorNotification('MAJOR ERROR','Major error occured. Received reply for non existant order. Received filename: ' . $filename . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
+                        $this->sendErrorNotification('MAJOR ERROR','Major error occured. Received reply for non existant order. Received filename: ' . $filename . PHP_EOL . "Filecontents:" . PHP_EOL . file_get_contents($path . $filename));
                         continue;
                     }
                     switch ($filenameContents[2])
                     {
                         case '003': // order cannot be changed (already packed, shipped, cancelled)
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WA Status 003','Status 003 "order cannot be changed (already packed, shipped, cancelled)" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
+                            $this->sendErrorNotification('RM_WA Status 003','Status 003 "order cannot be changed (already packed, shipped, cancelled)" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . file_get_contents($path . $filename));
                         break;
                         case '005': // cannot be cancelled because never created
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WA Status 005','Status 005 "cannot be cancelled because already processed or cancelled" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
+                            $this->sendErrorNotification('RM_WA Status 005','Status 005 "cannot be cancelled because already processed or cancelled" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . file_get_contents($path . $filename));
                         break;
                         case '006': // cannot be cancelled because already processed or cancelled
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WA Status 006','Status 006 "cannot be cancelled because already processed or cancelled" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
+                            $this->sendErrorNotification('RM_WA Status 006','Status 006 "cannot be cancelled because already processed or cancelled" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . file_get_contents($path . $filename));
                         break;
                         case '007': // order changed
                             $this->sendErrorNotification('RM_WA Status 007','Status 007 "order successfully changed" for order ' . $order->getOrderNumber());
                         break;
                         case '009': // minor error in order
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('RM_WA Status 009','Status 009 "minor error in order" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
+                            $this->sendErrorNotification('RM_WA Status 009','Status 009 "minor error in order" for order ' . $order->getOrderNumber() . PHP_EOL . "Filecontents:" . PHP_EOL . file_get_contents($path . $filename));
                         break;
                         case '010': // order sucessfully imported to rieck LFS
                             $result = $this->oiOrderServiceUtils->updateOrderStatus($order, $order->getId(), 'process');
@@ -275,9 +275,11 @@ class OrderInterfaceController extends AbstractController
                         break;
                         case '999': // major error (file doesn't meet the expectations, e.g. unfitting fieldlengths, fieldformats, missing necessary fields)
                             $deleteFilesWhenFinished = false;
-                            $this->sendErrorNotification('MAJOR ERROR','Major error occured. One or more submitted files did not meet expectations and been rejected. Received filename: ' . $filename . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents = file_get_contents($path . $filename));
+                            $this->sendErrorNotification('MAJOR ERROR','Major error occured. One or more submitted files did not meet expectations and been rejected. Received filename: ' . $filename . PHP_EOL . "Filecontents:" . PHP_EOL . file_get_contents($path . $filename));
                         break;
                         default:
+                            $deleteFilesWhenFinished = false;
+                            $this->sendErrorNotification('MAJOR ERROR','Major error occured. File could not be recognized. Received filename: ' . $filename . PHP_EOL . "Filecontents:" . PHP_EOL . file_get_contents($path . $filename));
                         break;
                     }
                     continue;
@@ -292,7 +294,6 @@ class OrderInterfaceController extends AbstractController
                 {
                     /** @var OrderEntity $order */
                     $order = $this->oiUtils->getOrder($this->container->get('order.repository'), 'orderNumber', $filenameContents[2],$context);
-                    $stateName = $order->getStateMachineState()->getTechnicalName();
                     
                     // get repository for confirmed cancelled orders
                     $cancelledConfirmation = $this->container->get('as_cancelled_confirmation.repository');
@@ -353,6 +354,7 @@ class OrderInterfaceController extends AbstractController
                             {
                                 if($orderLineItem->getQuantity() != intval($lineContents[6]))
                                 {
+                                    $deleteFilesWhenFinished = false;
                                     $this->sendErrorNotification('Order deviation VLE', 'Rieck was not able to pack enough product. Filecontents: ' . PHP_EOL . $fileContentsByLine[$i]);
                                 }
                             }
@@ -374,10 +376,7 @@ class OrderInterfaceController extends AbstractController
                 }
             }
         } 
-        if ($deleteFilesWhenFinished)
-        {
-            $this->deleteFiles($path);
-        }
+        $this->archiveFiles($path,$deleteFilesWhenFinished);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
     
@@ -481,10 +480,7 @@ class OrderInterfaceController extends AbstractController
                 }
             }
         }
-        if ($deleteFilesWhenFinished)
-        {
-            $this->deleteFiles($path);
-        }
+        $this->archiveFiles($path,$deleteFilesWhenFinished);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -596,6 +592,7 @@ class OrderInterfaceController extends AbstractController
                 $this->sendErrorNotification('Error: Article base','Error reported by logistics partner, submitted article base contains errors check logfile for further informations.' . PHP_EOL . "Filecontents:" . PHP_EOL . $filecontents);
             }
         }
+        $this->archiveFiles($path,false);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
     /**
@@ -648,8 +645,8 @@ class OrderInterfaceController extends AbstractController
                                 {
                                     continue;
                                 }
-
-
+                                $deleteFilesWhenFinished = false;
+                                $this->sendErrorNotification('QSK', 'Change in quality status. Details: ' . $contentLine);
                                 switch($lineContents[7])
                                 {
                                     case 'KL': // klärfall / clarification
@@ -820,33 +817,21 @@ class OrderInterfaceController extends AbstractController
                                     case 'KL': // klärfall / clarification
 
                                         $this->updateQSStockBS(0,0,0,intval($lineContents[5]),$articleNumber,$context);
-                                        // $stockQSRepository->update([
-                                        //     ['id' => $stockQSEntity->getId(), 'clarification' => $current + intval($lineContents[5])],
-                                        // ],$context);
                                         $this->sendErrorNotification('Stock Addition','Products added, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
                                     break;
                                     case 'NB': // Nachbearbeitung / postprocessing
                                         
                                         $this->updateQSStockBS(0,intval($lineContents[5]),0,0,$articleNumber,$context);
-                                        // $stockQSRepository->update([
-                                        //     ['id' => $stockQSEntity->getId(), 'postprocessing' => $current + intval($lineContents[5])],
-                                        // ],$context);
                                         $this->sendErrorNotification('Stock Addition','Products added, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
                                     break;
                                     case 'SO': // Sonstige / other
                                         
                                         $this->updateQSStockBS(0,0,intval($lineContents[5]),0,$articleNumber,$context);
-                                        // $stockQSRepository->update([
-                                        //     ['id' => $stockQSEntity->getId(), 'other' => $current + intval($lineContents[5])],
-                                        // ],$context);
                                         $this->sendErrorNotification('Stock Addition','Products added, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
                                     break;
                                     case 'DF': // Defekt // faulty
                                         
                                         $this->updateQSStockBS(intval($lineContents[5]),0,0,0,$articleNumber,$context);
-                                        // $stockQSRepository->update([
-                                        //     ['id' => $stockQSEntity->getId(), 'faulty' => $current + intval($lineContents[5])],
-                                        // ],$context);
                                         $this->sendErrorNotification('Stock Addition','Products added, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
                                     break;
                                     default:
@@ -878,33 +863,21 @@ class OrderInterfaceController extends AbstractController
                                     case 'KL': // klärfall / clarification
                                         
                                         $this->updateQSStockBS(0,0,0,intval($lineContents[5]),$articleNumber,$context);
-                                        // $stockQSRepository->update([
-                                        //     ['id' => $stockQSEntity->getId(), 'clarification' => $current - intval($lineContents[5])],
-                                        // ],$context);
                                         $this->sendErrorNotification('Stock Subtraction','Products removed, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
                                     break;
                                     case 'NB': // Nachbearbeitung / postprocessing
                                         
                                         $this->updateQSStockBS(0,intval($lineContents[5]),0,0,$articleNumber,$context);
-                                        // $stockQSRepository->update([
-                                        //     ['id' => $stockQSEntity->getId(), 'postprocessing' => $current - intval($lineContents[5])],
-                                        // ],$context);
                                         $this->sendErrorNotification('Stock Subtraction','Products removed, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
                                     break;
                                     case 'SO': // Sonstige / other
                                         
                                         $this->updateQSStockBS(0,0,intval($lineContents[5]),0,$articleNumber,$context);
-                                        // $stockQSRepository->update([
-                                        //     ['id' => $stockQSEntity->getId(), 'other' => $current - intval($lineContents[5])],
-                                        // ],$context);
                                         $this->sendErrorNotification('Stock Subtraction','Products removed, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
                                     break;
                                     case 'DF': // Defekt // faulty
                                         
                                         $this->updateQSStockBS(intval($lineContents[5]),0,0,0,$articleNumber,$context);
-                                        // $stockQSRepository->update([
-                                        //     ['id' => $stockQSEntity->getId(), 'faulty' => $current - intval($lineContents[5])],
-                                        // ],$context);
                                         $this->sendErrorNotification('Stock Subtraction','Products removed, clarification needed.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
                                     break;
                                     default:
@@ -927,10 +900,7 @@ class OrderInterfaceController extends AbstractController
                     }
             }
         }
-        if ($deleteFilesWhenFinished)
-        {
-            $this->deleteFiles($path);
-        }
+        $this->archiveFiles($path,$deleteFilesWhenFinished);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -1099,6 +1069,43 @@ class OrderInterfaceController extends AbstractController
         }
         rmdir($dir);
     }
+    /* Deletes recursive every file and folder in given path. So... be careful which path gets passed to this function */
+    private function archiveFiles($dir, $delete)
+    {
+        if(!$delete)
+        {
+            $splitDir = explode('/', $dir);
+            $archivePath = '';
+            foreach($splitDir as $dirPart)
+            {
+                if($dirPart == '')
+                {
+                    continue;
+                }
+                $archivePath = $archivePath . $dirPart . '/' ;
+                if($dirPart == 'InterfaceData')
+                {
+                    $archivePath = $archivePath . 'Archive' . '/';
+                }
+            }
+            if (!file_exists($archivePath)) {
+                mkdir($archivePath, 0777, true);
+            }
+            //copy all files from $dir to $archivePath
+            $files = scandir($dir);
+            for($i = 2; $i < count($files); $i++)
+            {
+                $source = $dir . $files[$i]; 
+                $dest = $archivePath . $files[$i]; 
+                copy($source,$dest);
+            }
+            $this->deleteFiles($dir);
+        }
+        else
+        {
+            $this->deleteFiles($dir);
+        }        
+    }
 
 
     /**
@@ -1123,7 +1130,7 @@ class OrderInterfaceController extends AbstractController
         // $currentStock = $productEntity->getStock();
         // $currentStockAvailable = $productEntity->getAvailableStock();
 
-        // $newStockValue = $currentStock + intval($stockAddition);
+        // $newSto,ckValue = $currentStock + intval($stockAddition);
         // $newAvailableStockValue = $currentStockAvailable + intval($availableStockAddition);
 
         // $productRepository->update(
@@ -1138,8 +1145,8 @@ class OrderInterfaceController extends AbstractController
         // // $filecontents = file_get_contents($path);
         // $this->sendErrorNotification('TestError','This is a test error message.' . PHP_EOL . 'Filecontents:' . PHP_EOL . $filecontents = file_get_contents($path));
         
-        $stockQS = $this->container->get('as_stock_qs.repository');
-        $cancelledConfirmation = $this->container->get('as_cancelled_confirmation.repository');
+        // $stockQS = $this->container->get('as_stock_qs.repository');
+        // $cancelledConfirmation = $this->container->get('as_cancelled_confirmation.repository');
         
         // $cancelledConfirmation->create([
         //     ['orderId' => 'asdwx'],

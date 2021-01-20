@@ -126,7 +126,7 @@ class OrderInterfaceUtils
     }
     
     /* Returns the order entity depending on the datafield identifier */
-    public function getOrder($orderRepository, $identifier, $filenameContents, $context): OrderEntity
+    public function getOrder($orderRepository, $identifier, $filenameContents, $context)
     {
         /** @var Criteria $criteria */
         $criteria = new Criteria();

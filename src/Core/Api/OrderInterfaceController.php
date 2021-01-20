@@ -238,6 +238,7 @@ class OrderInterfaceController extends AbstractController
                 {
                     /** @var OrderEntity $order */
                     $order = $this->oiUtils->getOrder($this->container->get('order.repository'), 'orderNumber', $filenameContents[3],$context);
+                   
 
                     if($order == null)
                     {// wrong kind of file has been read, notify administration and prevent deletion of files
@@ -313,7 +314,8 @@ class OrderInterfaceController extends AbstractController
                 {
                     /** @var EntityRepositoryInterface $orderRepositoryContainer */
                     $orderDeliveryRepository = $this->container->get('order_delivery.repository');
-
+                    /** @var EntityRepositoryInterface $orderLineItemRepository */
+                    $orderLineItemRepository = $this->container->get('order_line_item.repository');
                     /** @var OrderEntity $order */
                     $order = $this->oiUtils->getOrder($this->container->get('order.repository'), 'orderNumber', $filenameContents[2],$context);
 
@@ -331,6 +333,32 @@ class OrderInterfaceController extends AbstractController
                     
                     $filecontents = file_get_contents($path . $filename);
                     $fileContentsByLine = explode(PHP_EOL,$filecontents);
+
+                    for($i = 1; $i < count($fileContentsByLine); $i++)
+                    {
+                        $lineContents = explode(';', $fileContentsByLine[$i]);
+                        if(count($lineContents) <= 1)
+                        {
+                           continue; 
+                        }
+                        $articleNumber = $lineContents[5];
+                        $orderID = $order->getId();
+
+                        $orderedProducts = $this->oiUtils->getOrderedProducts($orderLineItemRepository, $orderID, $context);
+                        /** @var OrderLineItemEntity $orderLineItem */
+                        foreach($orderedProducts as $orderLineItem)
+                        {
+                            $productToCompare = $this->oiUtils->getProduct($this->container->get('product.repository'),$articleNumber,$context);
+                            if($productToCompare->getId() == $orderLineItem->getProductId())
+                            {
+                                if($orderLineItem->getQuantity() != intval($lineContents[6]))
+                                {
+                                    $this->sendErrorNotification('Order deviation VLE', 'Rieck was not able to pack enough product. Filecontents: ' . PHP_EOL . $fileContentsByLine[$i]);
+                                }
+                            }
+                        }
+                    }
+
                     $headContents = explode(';',$fileContentsByLine[0]);
                     $trackingnumbers = array();
                     for ($j = 1; $j < count($fileContentsByLine)-1; $j++)

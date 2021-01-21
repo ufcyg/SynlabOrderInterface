@@ -2,7 +2,6 @@
 
 namespace SynlabOrderInterface\Core\Api;
 
-use Exception;
 use Shopware\Core\Framework\Context;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
@@ -335,9 +334,9 @@ class OrderInterfaceController extends AbstractController
                     $filecontents = file_get_contents($path . $filename);
                     $fileContentsByLine = explode(PHP_EOL,$filecontents);
 
-                    for($i = 1; $i < count($fileContentsByLine); $i++)
+                    for($x = 1; $x < count($fileContentsByLine); $x++)
                     {
-                        $lineContents = explode(';', $fileContentsByLine[$i]);
+                        $lineContents = explode(';', $fileContentsByLine[$x]);
                         if(count($lineContents) <= 1)
                         {
                            continue; 
@@ -355,7 +354,7 @@ class OrderInterfaceController extends AbstractController
                                 if($orderLineItem->getQuantity() != intval($lineContents[6]))
                                 {
                                     $deleteFilesWhenFinished = false;
-                                    $this->sendErrorNotification('Order deviation VLE', 'Rieck was not able to pack enough product. Filecontents: ' . PHP_EOL . $fileContentsByLine[$i]);
+                                    $this->sendErrorNotification('Order deviation VLE', 'Rieck was not able to pack enough product. Filecontents: ' . PHP_EOL . $fileContentsByLine[$x]);
                                 }
                             }
                         }

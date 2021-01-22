@@ -22,8 +22,10 @@ use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use Shopware\Core\Checkout\Cart\Price\Struct\QuantityPriceDefinition;
 use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
+use Shopware\Core\Framework\DataAbstractionLayer\Pricing\Price;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceMailServiceHelper;
 use SynlabOrderInterface\Core\Content\StockQS\OrderInterfaceStockQSEntity;
 
@@ -351,9 +353,33 @@ class OrderInterfaceController extends AbstractController
                             $productToCompare = $this->oiUtils->getProduct($this->container->get('product.repository'),$articleNumber,$context);
                             if($productToCompare->getId() == $orderLineItem->getProductId())
                             {
-                                if($orderLineItem->getQuantity() != intval($lineContents[6]))
+                                $reportedAmount = intval($lineContents[6]);
+                                if(true)//$orderLineItem->getQuantity() != $reportedAmount)
                                 {
                                     $deleteFilesWhenFinished = false;
+                                    if($reportedAmount == 0)
+                                    {
+                                        $orderLineItemRepository->delete([
+                                            ['id' => $orderLineItem->getId()],
+                                        ],$context);
+                                    }
+                                    else
+                                    {
+                                        $unitPrice = $orderLineItem->getUnitPrice();
+                                        $totalPrice = $unitPrice * $reportedAmount;
+                                        /** @var QuantityPriceDefinition $orderLineItemPriceDefinition */
+                                        $orderLineItemPriceDefinition = $orderLineItem->getPriceDefinition();
+                                        $orderLineItemPriceDefinition->setQuantity($reportedAmount);
+
+                                        /** @var Price $orderLineItemPrice */
+                                        $orderLineItemPrice = $orderLineItem->getPrice();
+                                        $orderLineItemRepository->update(
+                                            [
+                                                [ 'id' => $orderLineItem->getId(), 'quantity' => $reportedAmount],
+                                            ],
+                                            Context::createDefaultContext()
+                                        );
+                                    }
                                     $this->sendErrorNotification('Order deviation VLE', 'Rieck was not able to pack enough product. Filecontents: ' . PHP_EOL . $fileContentsByLine[$x]);
                                 }
                             }
@@ -503,7 +529,7 @@ class OrderInterfaceController extends AbstractController
                 [ 'id' => $productEntity->getId(), 'stock' => $newStockValue ],
                 // [ 'id' => $productEntity->getId(), 'availableStock' => $newAvailableStockValue ], //value is write protected
             ],
-            Context::createDefaultContext()
+            $context
         );
     }
 

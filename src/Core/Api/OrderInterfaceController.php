@@ -77,6 +77,21 @@ class OrderInterfaceController extends AbstractController
     }
 
     /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/processAnswers", name="api.custom.synlab_order_interface.processAnswers", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     * Checks for answers by logistics partner.
+     */
+    public function processAnswers(Context $context): Response
+    {
+        $this->pullArticleError($context);
+        $this->pullRMWE($context);
+        $this->pullRMWA($context);
+        $this->pullBestand($context);
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+
+    /**
      * @Route("/api/v{version}/_action/synlab-order-interface/submitArticlebase", name="api.custom.synlab_order_interface.submitArticlebase", methods={"POST"})
      * @param Context $context;
      * @return Response

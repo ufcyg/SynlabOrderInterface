@@ -5,7 +5,6 @@ namespace SynlabOrderInterface\ScheduledTask;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTaskHandler;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SynlabOrderInterface\Core\Api\OrderInterfaceController;
 
 

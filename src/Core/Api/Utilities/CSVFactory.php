@@ -84,44 +84,70 @@ class CSVFactory
         $csvString = $csvString . $this->truncateString($placeholder,18) . ';';                                 // Lief.Artikelnummer 5 (18)Length
         if ($customFields != null)
         {
-            if(array_key_exists('custom_rieck_properties_MHD',$customFields))
+            if (array_key_exists('custom_rieck_properties_MHD', $customFields)) 
             {
-                $csvString = $csvString . '1' . ';';                                                            // MHD Pflicht? (1)Length
-            }
-            else
-            {
-                $csvString = $csvString . '0' . ';';                                                            // MHD Pflicht? (1)Length
-            }            
-            if(array_key_exists('custom_rieck_properties_MHD_WE',$customFields))
-            {
-                $csvString = $csvString . $customFields['custom_rieck_properties_MHD_WE'] . ';';                // MHD Restlaufzeit, WE (5)Length
-            }
-            else
-            {$csvString = $csvString . ';';}
-            if(array_key_exists('custom_rieck_properties_MHD_WA',$customFields))
-            {
-                $csvString = $csvString . $customFields['custom_rieck_properties_MHD_WA'] . ';';                // MHD Restlaufzeit WA (5)Length
-            }
-            else
-            {$csvString = $csvString . ';';}
-            if(array_key_exists('custom_rieck_properties_MHD',$customFields))
-            {
-                $csvString = $csvString . $customFields['custom_rieck_properties_MHD'] . ';';                   // Maximale Haltbarkeit (5)Length
-            }
-            else
-            {$csvString = $csvString . ';';}
-            if(array_key_exists('custom_rieck_properties_batched',$customFields))
-            {
-                if($customFields['custom_rieck_properties_batched'])
+                if($customFields['custom_rieck_properties_MHD'] == 0)
                 {
-                    $csvString = $csvString . '1' . ';';
+                    $csvString = $csvString . '0' . ';'; 
                 }
                 else
                 {
-                    $csvString = $csvString . '0' . ';';
-                }                                                           // Chargen Pflicht? (1)Length
-            }
-            else
+                    $csvString = $csvString . '1' . ';';                                                        // MHD Pflicht? (1)Length
+                }                                                          
+            } 
+            else 
+            {$csvString = $csvString . '0' . ';';}
+            if (array_key_exists('custom_rieck_properties_MHD_WE', $customFields)) 
+            {
+                if($customFields['custom_rieck_properties_MHD_WE'] == 0)
+                {
+                    $csvString = $csvString . ';';
+                }
+                else
+                {
+                    $csvString = $csvString . $customFields['custom_rieck_properties_MHD_WE'] . ';';                // MHD Restlaufzeit, WE (5)Length
+                }                
+            } 
+            else 
+            {$csvString = $csvString . ';';}
+            if (array_key_exists('custom_rieck_properties_MHD_WA', $customFields)) 
+            {
+                if($customFields['custom_rieck_properties_MHD_WA'] == 0)
+                {
+                    $csvString = $csvString . ';';
+                }
+                else
+                {
+                    $csvString = $csvString . $customFields['custom_rieck_properties_MHD_WA'] . ';';                // MHD Restlaufzeit WA (5)Length
+                }
+            } 
+            else 
+            {$csvString = $csvString . ';';}
+            if (array_key_exists('custom_rieck_properties_MHD', $customFields)) 
+            {
+                if($customFields['custom_rieck_properties_MHD_WE'] == 0)
+                {
+                    $csvString = $csvString . ';';
+                }
+                else
+                {
+                    $csvString = $csvString . $customFields['custom_rieck_properties_MHD'] . ';';                   // Maximale Haltbarkeit (5)Length
+                }                  
+            } 
+            else 
+            {$csvString = $csvString . ';';}
+            if (array_key_exists('custom_rieck_properties_batched', $customFields)) 
+            {
+                if ($customFields['custom_rieck_properties_batched']) 
+                {
+                    $csvString = $csvString . '1' . ';';
+                } 
+                else 
+                {
+                    $csvString = $csvString . '0' . ';';// Chargen Pflicht? (1)Length
+                }                                                           
+            } 
+            else 
             {$csvString = $csvString . ';';}
         }
         else

@@ -149,12 +149,11 @@ class SynlabOrderInterface extends Plugin
 
         $connection = $this->container->get(Connection::class);
 
-        // this will remain for some more versions to be sure every table is dopped everywhere
-        $connection->executeUpdate('DROP TABLE IF EXISTS `as_parcel_tracking`');
-
         $connection->executeUpdate('DROP TABLE IF EXISTS `as_stock_qs`');
         $connection->executeUpdate('DROP TABLE IF EXISTS `as_cancelled_confirmation`');
 
+        // this will remain for some more versions to be sure every table is dopped everywhere
+        $connection->executeUpdate('DROP TABLE IF EXISTS `as_parcel_tracking`');
         parent::uninstall($context);
     }
 }

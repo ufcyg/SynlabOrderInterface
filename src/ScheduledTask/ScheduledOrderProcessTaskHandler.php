@@ -21,7 +21,7 @@ class ScheduledOrderProcessTaskHandler extends ScheduledTaskHandler
 
     public static function getHandledMessages(): iterable
     {
-        return [ ScheduledOrderTransferTask::class ];
+        return [ ScheduledOrderProcessTask::class ];
     }
 
     public function run(): void

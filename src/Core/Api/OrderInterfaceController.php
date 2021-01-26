@@ -82,7 +82,7 @@ class OrderInterfaceController extends AbstractController
      * @return Response
      * Checks for answers by logistics partner.
      */
-    public function processAnswers(Context $context): Response
+    public function processAnswers(Context $context): ?Response
     {
         $this->pullArticleError($context);
         $this->pullRMWE($context);
@@ -97,7 +97,7 @@ class OrderInterfaceController extends AbstractController
      * @return Response
      * Writes file with full articlebase local and transmits the file to the designated sFTP server.
      */
-    public function submitArticlebase(Context $context): Response
+    public function submitArticlebase(Context $context): ?Response
     { 
         /** @var EntitySearchResult $products */
         $products = $this->oiUtils->getAllProducts($this->container->get('product.repository'), $context);
@@ -125,7 +125,7 @@ class OrderInterfaceController extends AbstractController
      * @return Response
      * Checks for open orders and transmits them to the designated sFTP server
      */
-    public function submitOrders(Context $context): Response
+    public function submitOrders(Context $context): ?Response
     {
         /** @var EntitySearchResult $entities */
         $entities = $this->oiUtils->getOrderEntities($this->container->get('order.repository'), false, $context); //TODO define which orders should be transmitted
@@ -220,7 +220,7 @@ class OrderInterfaceController extends AbstractController
      * @return Response
      * Pulls feedback about goods dispatchment from logistics partner
      */
-    public function pullRMWA(Context $context):Response
+    public function pullRMWA(Context $context): ?Response
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA');
         if (!file_exists($path)) {
@@ -236,7 +236,7 @@ class OrderInterfaceController extends AbstractController
      * @return Response
      * Processes pulled feedback about goods dispatchment from logistics partner
      */
-    public function checkRMWA(Context $context): Response
+    public function checkRMWA(Context $context): ?Response
     {
         $deleteFilesWhenFinished = false; // since a false bool value is null for shopware we predefine the false value... 
         //get flag for deleting files when finished
@@ -427,7 +427,7 @@ class OrderInterfaceController extends AbstractController
      * @return Response
      * Pulls feedback about goods receipt from logistics partner
      */
-    public function pullRMWE(Context $context): Response
+    public function pullRMWE(Context $context): ?Response
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WE');
         if (!file_exists($path)) {
@@ -442,7 +442,7 @@ class OrderInterfaceController extends AbstractController
      * @return Response
      * Processes pulled feedback about goods receipt from logistics partner
      */
-    public function checkRMWE(Context $context): Response
+    public function checkRMWE(Context $context): ?Response
     {
         $deleteFilesWhenFinished = false; // since a false bool value is null for shopware we predefine the false value... 
         //get flag for deleting files when finished
@@ -602,7 +602,7 @@ class OrderInterfaceController extends AbstractController
      * @return Response
      * Pulls the article error response from remote sFTP server
      */
-    public function pullArticleError(Context $context): Response
+    public function pullArticleError(Context $context): ?Response
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Artikel_Error');
         if (!file_exists($path)) {
@@ -617,7 +617,7 @@ class OrderInterfaceController extends AbstractController
      * @return Response
      * Checks pulled article error response, iterates through them and send a notification eMail to administration
      */
-    public function checkArticleError(Context $context): Response
+    public function checkArticleError(Context $context): ?Response
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Artikel_Error') . '/';
         if (file_exists($path)) {
@@ -641,7 +641,7 @@ class OrderInterfaceController extends AbstractController
      * @return Response
      * Pulls the stock report from remote sFTP server
      */
-    public function pullBestand(Context $context): Response
+    public function pullBestand(Context $context): ?Response
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand');
         if (!file_exists($path)) {
@@ -661,7 +661,7 @@ class OrderInterfaceController extends AbstractController
      * other - SO
      * clarification - KL
      */
-    public function checkBestand(Context $context): Response
+    public function checkBestand(Context $context): ?Response
     {
         $deleteFilesWhenFinished = false; // since a false bool value is null for shopware we predefine the false value... 
         //get flag for deleting files when finished

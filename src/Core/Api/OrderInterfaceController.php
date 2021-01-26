@@ -369,7 +369,7 @@ class OrderInterfaceController extends AbstractController
                             if($productToCompare->getId() == $orderLineItem->getProductId())
                             {
                                 $reportedAmount = intval($lineContents[6]);
-                                if(true)//$orderLineItem->getQuantity() != $reportedAmount)
+                                if($orderLineItem->getQuantity() != $reportedAmount)
                                 {
                                     $deleteFilesWhenFinished = false;
                                     if($reportedAmount == 0)

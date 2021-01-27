@@ -63,6 +63,15 @@
             <tag name="messenger.message_handler" />
         </service>
 
+        <service id="SynlabOrderInterface\ScheduledTask\HealthServiceTask">
+            <tag name="shopware.scheduled.task" />
+        </service>
+        <service id="SynlabOrderInterface\ScheduledTask\HealthServiceTaskHandler">
+            <argument type="service" id="scheduled_task.repository" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
+
+            <tag name="messenger.message_handler" />
+        </service>
         
     </services>
 </container>

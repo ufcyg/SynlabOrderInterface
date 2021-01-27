@@ -93,7 +93,7 @@ class OrderInterfaceUtils
         return $productsRepository->search($criteria, $context);
     }
     /* Returns a specific product defined by the articleNumber */
-    public function getProduct(EntityRepositoryInterface $productRepository, string $articleNumber, Context $context): ProductEntity
+    public function getProduct(EntityRepositoryInterface $productRepository, string $articleNumber, Context $context): ?ProductEntity
     {
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('productNumber', $articleNumber));

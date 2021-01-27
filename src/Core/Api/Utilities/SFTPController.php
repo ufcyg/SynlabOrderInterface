@@ -3,6 +3,7 @@
 namespace SynlabOrderInterface\Core\Api\Utilities;
 
 use Exception;
+use Symfony\Component\HttpFoundation\Response;
 
 /*
 
@@ -71,8 +72,9 @@ class SFTPController
     }
 
     /* Copies a file from the remote sFTP server to local disc for evaluation */
-    public function pullFile(string $localDir, string $remoteDir, $orderInterfaceController, $context, &$response, string $action)
+    public function pullFile(string $localDir, string $remoteDir, $orderInterfaceController, $context, &$response, string $action): ?Response
     {
+        $reponse = null;
         $this->openConnection();
         if($this->authConnection())
         {
@@ -90,14 +92,15 @@ class SFTPController
                         ssh2_sftp_unlink($sftp, $this->homeDirectory . $remoteDir . '/' . $file);
                     }
                 }
-                ssh2_disconnect($this->connection);
                 $response = call_user_func( array( $orderInterfaceController, $action), $context );
             }
+            ssh2_disconnect($this->connection);
         }
         else
         {
             throw new Exception("Could not authenticate with username $this->username " .
             "and password $this->password.");
-        }           
+        }
+        return $response;
     }
 }

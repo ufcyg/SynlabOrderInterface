@@ -84,10 +84,10 @@ class OrderInterfaceController extends AbstractController
      */
     public function processAnswers(Context $context): ?Response
     {
-        $this->pullArticleError($context);
-        $this->pullRMWE($context);
-        $this->pullRMWA($context);
-        $this->pullBestand($context);
+        $repsonse = $this->pullBestand($context);
+        $repsonse = $this->pullArticleError($context);
+        $repsonse = $this->pullRMWE($context);
+        $repsonse = $this->pullRMWA($context);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -129,7 +129,9 @@ class OrderInterfaceController extends AbstractController
     {
         /** @var EntitySearchResult $entities */
         $entities = $this->oiUtils->getOrderEntities($this->container->get('order.repository'), false, $context); //TODO define which orders should be transmitted
-
+        if($entities == null){
+            return new Response('',Response::HTTP_NO_CONTENT);
+        }
         if(count($entities) === 0){
             return new Response('',Response::HTTP_NO_CONTENT);
         }
@@ -434,7 +436,7 @@ class OrderInterfaceController extends AbstractController
             mkdir($path, 0777, true);
         } 
         $this->sftpController->pullFile($path,'RM_WE', $this, $context, $response, 'checkRMWE');
-        return $this->checkRMWE($context);
+        return $response;
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkRMWE", name="api.custom.synlab_order_interface.checkRMWE", methods={"POST"})
@@ -609,7 +611,7 @@ class OrderInterfaceController extends AbstractController
             mkdir($path, 0777, true);
         } 
         $this->sftpController->pullFile($path,'Artikel_Error', $this, $context, $response, 'checkArticleError');
-        return $this->checkArticleError($context);
+        return $response;
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkArticleError", name="api.custom.synlab_order_interface.checkArticleError", methods={"POST"})
@@ -648,7 +650,7 @@ class OrderInterfaceController extends AbstractController
             mkdir($path, 0777, true);
         } 
         $this->sftpController->pullFile($path,'Bestand', $this, $context, $response, 'checkBestand');
-        return $this->checkBestand($context);
+        return $response;
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkBestand", name="api.custom.synlab_order_interface.checkBestand", methods={"POST"})
@@ -803,7 +805,11 @@ class OrderInterfaceController extends AbstractController
 
                                 /** @var ProductEntity $productEntity */
                                 $productEntity = $this->oiUtils->getProduct($productRepository, $articleNumber, $context);
-
+                                if($productEntity == null)
+                                {
+                                    $this->sendErrorNotification('Stock feedback contains unknown product', 'A product mentioned in the daily stock feedback report is unkown. Please check the stock feedback.' . PHP_EOL . $contentLine);
+                                    continue;
+                                }
                                 $criteria = new Criteria();
                                 $criteria->addFilter(new EqualsFilter('productId',$productEntity->getId()));
 

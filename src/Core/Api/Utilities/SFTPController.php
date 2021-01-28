@@ -24,7 +24,7 @@ class SFTPController
     private $password;
     /** @var string $homeDirectory */
     private $homeDirectory;
-
+    /** @var resource */
     private $connection;
 
     public function __construct(string $host, string $port, string $username, string $password, string $homeDirectory)
@@ -50,11 +50,8 @@ class SFTPController
     /* Authentificates on the opened connection */
     private function authConnection():bool
     {
-        if (ssh2_auth_password($this->connection, $this->username, $this->password)) {
-            return true;
-        }
-        throw new Exception("Could not authenticate with username $this->username " . "and password $this->password.");
-        return false;
+        $authentificationSuccessful = ssh2_auth_password($this->connection, $this->username, $this->password);
+        return $authentificationSuccessful;
     }
 
     /* Writes local file on remote sFTP server */
@@ -72,9 +69,9 @@ class SFTPController
     }
 
     /* Copies a file from the remote sFTP server to local disc for evaluation */
-    public function pullFile(string $localDir, string $remoteDir, $orderInterfaceController, $context, &$response, string $action): ?Response
+    public function pullFile(string $localDir, string $remoteDir, $orderInterfaceController, $context, string $action): ?Response
     {
-        $reponse = null;
+        $response = new Response('',Response::HTTP_NO_CONTENT);
         $this->openConnection();
         if($this->authConnection())
         {
@@ -88,6 +85,7 @@ class SFTPController
                     {
                         $stream = fopen('ssh2.sftp://' . intval($sftp) . $this->homeDirectory . $remoteDir . '/' . $file, 'r');
                         file_put_contents($localDir . '/' . $file,$stream);
+                        fclose($stream);
                         // this deletes the remote file, this is required by logistics partner
                         ssh2_sftp_unlink($sftp, $this->homeDirectory . $remoteDir . '/' . $file);
                     }

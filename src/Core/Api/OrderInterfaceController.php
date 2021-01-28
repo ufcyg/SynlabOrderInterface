@@ -84,11 +84,12 @@ class OrderInterfaceController extends AbstractController
      */
     public function processAnswers(Context $context): ?Response
     {
-        $repsonse = $this->pullBestand($context);
-        $repsonse = $this->pullArticleError($context);
-        $repsonse = $this->pullRMWE($context);
-        $repsonse = $this->pullRMWA($context);
-        return new Response('',Response::HTTP_NO_CONTENT);
+        set_time_limit(0);
+        $response = $this->pullBestand($context);
+        $response = $this->pullArticleError($context);
+        $response = $this->pullRMWE($context);
+        $response = $this->pullRMWA($context);
+        return $response;
     }
 
     /**
@@ -229,8 +230,7 @@ class OrderInterfaceController extends AbstractController
             mkdir($path, 0777, true);
         } 
         
-        $this->sftpController->pullFile($path,'RM_WA', $this, $context, $response, 'checkRMWA');
-        return $response;
+        return $this->sftpController->pullFile($path,'RM_WA', $this, $context, 'checkRMWA');
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkRMWA", name="api.custom.synlab_order_interface.checkRMWA", methods={"POST"})
@@ -435,8 +435,8 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        $this->sftpController->pullFile($path,'RM_WE', $this, $context, $response, 'checkRMWE');
-        return $response;
+        
+        return $this->sftpController->pullFile($path,'RM_WE', $this, $context, 'checkRMWE');
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkRMWE", name="api.custom.synlab_order_interface.checkRMWE", methods={"POST"})
@@ -610,8 +610,8 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        $this->sftpController->pullFile($path,'Artikel_Error', $this, $context, $response, 'checkArticleError');
-        return $response;
+        
+        return $this->sftpController->pullFile($path,'Artikel_Error', $this, $context, 'checkArticleError');
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkArticleError", name="api.custom.synlab_order_interface.checkArticleError", methods={"POST"})
@@ -649,7 +649,7 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        $this->sftpController->pullFile($path,'Bestand', $this, $context, $response, 'checkBestand');
+        $response = $this->sftpController->pullFile($path,'Bestand', $this, $context, 'checkBestand');
         return $response;
     }
     /**
@@ -797,8 +797,11 @@ class OrderInterfaceController extends AbstractController
                                 $qsPostprocessing = intval($lineContents[8]);
                                 $qsOther = intval($lineContents[9]);
                                 
-                                //TODO COMPARE
                                 $articleNumber = $lineContents[1];
+                                if(intval($articleNumber) == 99999)
+                                {
+                                    continue;
+                                }
 
                                 $productRepository = $this->container->get('product.repository');
                                 $stockQSRepository = $this->container->get('as_stock_qs.repository');
@@ -1214,6 +1217,7 @@ class OrderInterfaceController extends AbstractController
         // ],
         //     $context
         // );
+
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 

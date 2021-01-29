@@ -84,11 +84,10 @@ class OrderInterfaceController extends AbstractController
      */
     public function processAnswers(Context $context): ?Response
     {
-        set_time_limit(0);
-        $response = $this->pullBestand($context);
         $response = $this->pullArticleError($context);
         $response = $this->pullRMWE($context);
         $response = $this->pullRMWA($context);
+        $response = $this->pullBestand($context);
         return $response;
     }
 
@@ -229,8 +228,8 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        
-        return $this->sftpController->pullFile($path,'RM_WA', $this, $context, 'checkRMWA');
+        $this->sftpController->pullFile($path,'RM_WA');
+        return $this->checkRMWA($context);
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkRMWA", name="api.custom.synlab_order_interface.checkRMWA", methods={"POST"})
@@ -435,8 +434,8 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        
-        return $this->sftpController->pullFile($path,'RM_WE', $this, $context, 'checkRMWE');
+        $this->sftpController->pullFile($path,'RM_WE');
+        return $this->checkRMWE($context);
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkRMWE", name="api.custom.synlab_order_interface.checkRMWE", methods={"POST"})
@@ -610,8 +609,8 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        
-        return $this->sftpController->pullFile($path,'Artikel_Error', $this, $context, 'checkArticleError');
+        $this->sftpController->pullFile($path,'Artikel_Error');
+        return $this->checkArticleError($context);
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkArticleError", name="api.custom.synlab_order_interface.checkArticleError", methods={"POST"})
@@ -649,8 +648,8 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        $response = $this->sftpController->pullFile($path,'Bestand', $this, $context, 'checkBestand');
-        return $response;
+        $this->sftpController->pullFile($path,'Bestand');
+        return $this->checkBestand($context);
     }
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/checkBestand", name="api.custom.synlab_order_interface.checkBestand", methods={"POST"})

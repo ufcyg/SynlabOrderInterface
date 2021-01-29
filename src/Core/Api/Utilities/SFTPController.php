@@ -41,7 +41,6 @@ class SFTPController
     {
         $this->connection = ssh2_connect($this->host, intval($this->port));
         if (! $this->connection) {
-            throw new Exception("Could not connect to $this->host on port $this->port.");
             return false;
         }
         return true;
@@ -69,36 +68,60 @@ class SFTPController
     }
 
     /* Copies a file from the remote sFTP server to local disc for evaluation */
-    public function pullFile(string $localDir, string $remoteDir, $orderInterfaceController, $context, string $action): ?Response
+    public function pullFile(string $localDir, string $remoteDir)
     {
-        $response = new Response('',Response::HTTP_NO_CONTENT);
-        $this->openConnection();
-        if($this->authConnection())
-        {
-            $sftp = ssh2_sftp($this->connection);
-            $files    = scandir('ssh2.sftp://' . intval($sftp) . $this->homeDirectory . $remoteDir);
-            if (!empty($files)) 
-            {
-                foreach ($files as $file) 
-                {
-                    if ($file != '.' && $file != '..') 
-                    {
-                        $stream = fopen('ssh2.sftp://' . intval($sftp) . $this->homeDirectory . $remoteDir . '/' . $file, 'r');
-                        file_put_contents($localDir . '/' . $file,$stream);
-                        fclose($stream);
-                        // this deletes the remote file, this is required by logistics partner
-                        ssh2_sftp_unlink($sftp, $this->homeDirectory . $remoteDir . '/' . $file);
-                    }
-                }
-                $response = call_user_func( array( $orderInterfaceController, $action), $context );
+        if (!function_exists("ssh2_connect")) {
+            die('Function ssh2_connect not found, you cannot use ssh2 here');
+        }
+
+        if (!$connection = ssh2_connect($this->host, intval($this->port))) {
+            die('Unable to connect');
+        }
+
+        if (!ssh2_auth_password($connection, $this->username, $this->password)) {
+            die('Unable to authenticate.');
+        }
+
+        if (!$stream = ssh2_sftp($connection)) {
+            die('Unable to create a stream.');
+        }
+        if (!$dir = opendir('ssh2.sftp://' . intval($stream) . $this->homeDirectory . $remoteDir)) {
+            die('Could not open the directory');
+        }
+        
+        $files = array();
+        while (false !== ($file = readdir($dir))) {
+            if ($file == "." || $file == "..") {
+                continue;
             }
-            ssh2_disconnect($this->connection);
+            $files[] = $file;
         }
-        else
-        {
-            throw new Exception("Could not authenticate with username $this->username " .
-            "and password $this->password.");
+        
+        foreach ($files as $file) {
+            // echo "Copying file: $file\n";
+            if (!$remote = @fopen('ssh2.sftp://' . intval($stream) . $this->homeDirectory . $remoteDir . '/' . $file, 'r')) {
+                echo "Unable to open remote file: $file\n";
+                continue;
+            }
+
+            if (!$local = @fopen($localDir . '/' . $file, 'w')) {
+                echo "Unable to create local file: $file\n";
+                continue;
+            }
+
+            $read = 0;
+            $filesize = filesize('ssh2.sftp://' . intval($stream) . $this->homeDirectory . $remoteDir . '/' . $file);
+            while ($read < $filesize && ($buffer = fread($remote, $filesize - $read))) {
+                $read += strlen($buffer);
+                if (fwrite($local, $buffer) === false) {
+                    echo "Unable to write to local file: $file\n";
+                    break;
+                }
+            }
+            fclose($local);
+            ssh2_sftp_unlink($stream, $this->homeDirectory . $remoteDir . '/' . $file);
+            fclose($remote);            
         }
-        return $response;
+        closedir($dir);
     }
 }

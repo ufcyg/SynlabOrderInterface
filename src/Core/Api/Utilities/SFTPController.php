@@ -119,7 +119,7 @@ class SFTPController
                 }
             }
             fclose($local);
-            // ssh2_sftp_unlink($stream, $this->homeDirectory . $remoteDir . '/' . $file);
+            ssh2_sftp_unlink($stream, $this->homeDirectory . $remoteDir . '/' . $file);
             fclose($remote);            
         }
         closedir($dir);

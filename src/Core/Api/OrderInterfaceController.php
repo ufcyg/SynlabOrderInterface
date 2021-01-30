@@ -762,16 +762,16 @@ class OrderInterfaceController extends AbstractController
                                         switch($lineContents[9])
                                         {
                                             case 'KL': // to clarification
-                                                $this->processQSK($lineContents[1],0,intval($lineContents[5]),0,0,-intval($lineContents[5]),$context); // intval($lineContents[5])
+                                                $this->processQSK($lineContents[1],0,intval($lineContents[5]),0,0,-intval($lineContents[5]),$context); 
                                             break;
                                             case 'NB': // to postprocessing
-                                                $this->processQSK($lineContents[1],0,0,intval($lineContents[5]),0,-intval($lineContents[5]),$context); // intval($lineContents[5])
+                                                $this->processQSK($lineContents[1],0,0,intval($lineContents[5]),0,-intval($lineContents[5]),$context); 
                                             break;
                                             case 'SO': // to other
-                                                $this->processQSK($lineContents[1],0,0,0,intval($lineContents[5]),-intval($lineContents[5]),$context); // intval($lineContents[5])
+                                                $this->processQSK($lineContents[1],0,0,0,intval($lineContents[5]),-intval($lineContents[5]),$context); 
                                             break;
                                             case 'DF': // to faulty
-                                                $this->processQSK($lineContents[1],intval($lineContents[5]),0,0,0,-intval($lineContents[5]),$context); // intval($lineContents[5])
+                                                $this->processQSK($lineContents[1],intval($lineContents[5]),0,0,0,-intval($lineContents[5]),$context); 
                                             break;
                                         }
                                     break;
@@ -780,27 +780,49 @@ class OrderInterfaceController extends AbstractController
                         break;
                         case 'BESTAND': // Daily report of current available items
                             $filecontents = file_get_contents($path . $filename);
-                            $fileContentsByLine = explode(PHP_EOL,$filecontents);       
-                            foreach ($fileContentsByLine as $contentLine)
+                            $fileContentsByLine = explode(PHP_EOL,$filecontents); 
+                            $uniqueProductNumbers = array();
+                            $condensedArray = array();      
+                            $prevValue = 0;
+                            foreach ($fileContentsByLine as $contentLine) {
+                                if($contentLine == "") // skip if line contains no information
+                                    continue;
+
+                                $contentLineFields = explode(';',$contentLine);
+                                $productNumber = $contentLineFields[1];
+                                if($productNumber == "99999") // skip if line contains information about stored files, they always have the product ID 99999
+                                    continue;
+
+                                if(!in_array($productNumber,$uniqueProductNumbers))
+                                    array_push($uniqueProductNumbers,$productNumber);
+
+                                $prevValue = array_key_exists($productNumber . '-' . "available", $condensedArray) ? $condensedArray[$contentLineFields[1] . '-' . "available"] : 0;
+                                $condensedArray[$productNumber . '-' . "available"] = $prevValue + intval($contentLineFields[5]);
+
+                                $prevValue = array_key_exists($productNumber . '-' . "qsFaulty", $condensedArray) ? $condensedArray[$contentLineFields[1] . '-' . "qsFaulty"] : 0;
+                                $condensedArray[$productNumber . '-' . "qsFaulty"] = $prevValue + intval($contentLineFields[6]);
+
+                                $prevValue = array_key_exists($productNumber . '-' . "qsClarification", $condensedArray) ? $condensedArray[$contentLineFields[1] . '-' . "qsClarification"] : 0;
+                                $condensedArray[$productNumber . '-' . "qsClarification"] = $prevValue + intval($contentLineFields[7]);
+
+                                $prevValue = array_key_exists($productNumber . '-' . "qsPostprocessing", $condensedArray) ? $condensedArray[$contentLineFields[1] . '-' . "qsPostprocessing"] : 0;
+                                $condensedArray[$productNumber . '-' . "qsPostprocessing"] = $prevValue + intval($contentLineFields[8]);
+
+                                $prevValue = array_key_exists($productNumber . '-' . "qsOther", $condensedArray) ? $condensedArray[$contentLineFields[1] . '-' . "qsOther"] : 0;
+                                $condensedArray[$productNumber . '-' . "qsOther"] = $prevValue + intval($contentLineFields[9]);
+                            }
+
+                            $productCount = count($condensedArray) / 5; // amount of entries in the condensed array divided by the amount of unique entries per product
+
+                            for($y = 0; $y < $productCount; $y++)
                             {
-                                /** @var bool $discrepancy */
-                                $discrepancy = false;
-                                $lineContents = explode(';', $contentLine);
-                                if(count($lineContents) <= 1)
-                                {
-                                    continue;
-                                }
-                                $available = intval($lineContents[5]);
-                                $qsFaulty = intval($lineContents[6]);
-                                $qsClarification = intval($lineContents[7]);
-                                $qsPostprocessing = intval($lineContents[8]);
-                                $qsOther = intval($lineContents[9]);
-                                
-                                $articleNumber = $lineContents[1];
-                                if(intval($articleNumber) == 99999)
-                                {
-                                    continue;
-                                }
+                                $articleNumber = $uniqueProductNumbers[$y];
+
+                                $available = $condensedArray[$articleNumber . '-' . "available"];
+                                $qsFaulty = $condensedArray[$articleNumber . '-' . "qsFaulty"];
+                                $qsClarification = $condensedArray[$articleNumber . '-' . "qsClarification"];
+                                $qsPostprocessing = $condensedArray[$articleNumber . '-' . "qsPostprocessing"];
+                                $qsOther = $condensedArray[$articleNumber . '-' . "qsOther"];
 
                                 $productRepository = $this->container->get('product.repository');
                                 $stockQSRepository = $this->container->get('as_stock_qs.repository');
@@ -812,38 +834,110 @@ class OrderInterfaceController extends AbstractController
                                     $this->sendErrorNotification('Stock feedback contains unknown product', 'A product mentioned in the daily stock feedback report is unkown. Please check the stock feedback.' . PHP_EOL . $contentLine);
                                     continue;
                                 }
+
                                 $criteria = new Criteria();
                                 $criteria->addFilter(new EqualsFilter('productId',$productEntity->getId()));
 
                                 $searchResult = $stockQSRepository->search($criteria,$context);
                                 /** @var OrderInterfaceStockQSEntity $stockQSEntity */
                                 $stockQSEntity = $searchResult->first();
+
+                                $discrepancy = false;
+                                $discrepancyValue = 0;
                                 if($productEntity->getStock() != $available)
                                 {
                                     $discrepancy = true;
+                                    $discrepancyValue = $productEntity->getStock() - $available;
                                 }
                                 if($stockQSEntity->getFaulty() != $qsFaulty)
                                 {
                                     $discrepancy = true;
+                                    $discrepancyValue = $stockQSEntity->getFaulty() - $qsFaulty;
                                 }
                                 if($stockQSEntity->getClarification() != $qsClarification)
                                 {
                                     $discrepancy = true;
+                                    $discrepancyValue = $stockQSEntity->getClarification() - $qsClarification;
                                 }
                                 if($stockQSEntity->getPostprocessing() != $qsPostprocessing)
                                 {
                                     $discrepancy = true;
+                                    $discrepancyValue = $stockQSEntity->getPostprocessing() - $qsPostprocessing;
                                 }
                                 if($stockQSEntity->getOther() != $qsOther)
                                 {
                                     $discrepancy = true;
+                                    $discrepancyValue = $stockQSEntity->getOther() - $qsOther;
                                 }
                                 if($discrepancy)
                                 {
                                     $deleteFilesWhenFinished = false;
-                                    $this->sendErrorNotification('Stock Feedback Discrepancy','Discrepancies found in stock feedback check logfile for further informations.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                                    $this->sendErrorNotification('Stock Feedback Discrepancy','Discrepancies found in stock feedback check logfile for further informations.' . PHP_EOL . "Articlenumber: " . $articleNumber . ", discrepancy: " . $discrepancyValue);
                                 }
-                            }                            
+                            }
+                            // foreach ($fileContentsByLine as $contentLine)
+                            // {
+                            //     /** @var bool $discrepancy */
+                            //     $discrepancy = false;
+                            //     $lineContents = explode(';', $contentLine);
+                            //     if(count($lineContents) <= 1)
+                            //     {
+                            //         continue;
+                            //     }
+                            //     $available = intval($lineContents[5]);
+                            //     $qsFaulty = intval($lineContents[6]);
+                            //     $qsClarification = intval($lineContents[7]);
+                            //     $qsPostprocessing = intval($lineContents[8]);
+                            //     $qsOther = intval($lineContents[9]);
+                                
+                            //     $articleNumber = $lineContents[1];
+                            //     if(intval($articleNumber) == 99999)
+                            //     {
+                            //         continue;
+                            //     }
+
+                            //     $productRepository = $this->container->get('product.repository');
+                            //     $stockQSRepository = $this->container->get('as_stock_qs.repository');
+
+                            //     /** @var ProductEntity $productEntity */
+                            //     $productEntity = $this->oiUtils->getProduct($productRepository, $articleNumber, $context);
+                            //     if($productEntity == null)
+                            //     {
+                            //         $this->sendErrorNotification('Stock feedback contains unknown product', 'A product mentioned in the daily stock feedback report is unkown. Please check the stock feedback.' . PHP_EOL . $contentLine);
+                            //         continue;
+                            //     }
+                            //     $criteria = new Criteria();
+                            //     $criteria->addFilter(new EqualsFilter('productId',$productEntity->getId()));
+
+                            //     $searchResult = $stockQSRepository->search($criteria,$context);
+                            //     /** @var OrderInterfaceStockQSEntity $stockQSEntity */
+                            //     $stockQSEntity = $searchResult->first();
+                            //     if($productEntity->getStock() != $available)
+                            //     {
+                            //         $discrepancy = true;
+                            //     }
+                            //     if($stockQSEntity->getFaulty() != $qsFaulty)
+                            //     {
+                            //         $discrepancy = true;
+                            //     }
+                            //     if($stockQSEntity->getClarification() != $qsClarification)
+                            //     {
+                            //         $discrepancy = true;
+                            //     }
+                            //     if($stockQSEntity->getPostprocessing() != $qsPostprocessing)
+                            //     {
+                            //         $discrepancy = true;
+                            //     }
+                            //     if($stockQSEntity->getOther() != $qsOther)
+                            //     {
+                            //         $discrepancy = true;
+                            //     }
+                            //     if($discrepancy)
+                            //     {
+                            //         $deleteFilesWhenFinished = false;
+                            //         $this->sendErrorNotification('Stock Feedback Discrepancy','Discrepancies found in stock feedback check logfile for further informations.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
+                            //     }
+                            // }                            
                         break;
                         case 'BS+': // addition of currently available items (items lost but found, etc.)
                             $filecontents = file_get_contents($path . $filename);

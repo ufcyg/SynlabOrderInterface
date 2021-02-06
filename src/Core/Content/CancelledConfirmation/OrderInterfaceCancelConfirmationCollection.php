@@ -5,13 +5,13 @@ namespace SynlabOrderInterface\Core\Content\CancelledConfirmation;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
 
 /**
- * @method void              add(SteeredCustomerRegistrationCollection $entity)
- * @method void              set(string $key, SteeredCustomerRegistrationCollection $entity)
- * @method SteeredCustomerRegistrationCollection[]    getIterator()
- * @method SteeredCustomerRegistrationCollection[]    getElements()
- * @method SteeredCustomerRegistrationCollection|null get(string $key)
- * @method SteeredCustomerRegistrationCollection|null first()
- * @method SteeredCustomerRegistrationCollection|null last()
+ * @method void              add(OrderInterfaceCancelConfirmationCollection $entity)
+ * @method void              set(string $key, OrderInterfaceCancelConfirmationCollection $entity)
+ * @method OrderInterfaceCancelConfirmationCollection[]    getIterator()
+ * @method OrderInterfaceCancelConfirmationCollection[]    getElements()
+ * @method OrderInterfaceCancelConfirmationCollection|null get(string $key)
+ * @method OrderInterfaceCancelConfirmationCollection|null first()
+ * @method OrderInterfaceCancelConfirmationCollection|null last()
  */
 class OrderInterfaceCancelConfirmationCollection extends EntityCollection
 {

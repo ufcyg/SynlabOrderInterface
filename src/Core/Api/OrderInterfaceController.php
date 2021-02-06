@@ -91,6 +91,19 @@ class OrderInterfaceController extends AbstractController
         return $response;
     }
 
+    // /**
+    //  * @Route("/api/v{version}/_action/synlab-order-interface/dummyRoute", name="api.custom.synlab_order_interface.dummyRoute", methods={"POST"})
+    //  * @param Context $context;
+    //  * @return Response
+    //  * Checks for answers by logistics partner.
+    //  */
+    // public function dummyRoute(Context $context): ?Response
+    // {
+    //     $response = new Response('',Response::HTTP_NO_CONTENT);
+        
+    //     return $response;
+    // }
+
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/submitArticlebase", name="api.custom.synlab_order_interface.submitArticlebase", methods={"POST"})
      * @param Context $context;
@@ -844,10 +857,10 @@ class OrderInterfaceController extends AbstractController
 
                                 $discrepancy = false;
                                 $discrepancyValue = 0;
-                                if($productEntity->getStock() != $available)
+                                if($productEntity->getAvailableStock() != $available)
                                 {
                                     $discrepancy = true;
-                                    $discrepancyValue = $productEntity->getStock() - $available;
+                                    $discrepancyValue = $productEntity->getAvailableStock() - $available;
                                 }
                                 if($stockQSEntity->getFaulty() != $qsFaulty)
                                 {
@@ -874,70 +887,7 @@ class OrderInterfaceController extends AbstractController
                                     $deleteFilesWhenFinished = false;
                                     $this->sendErrorNotification('Stock Feedback Discrepancy','Discrepancies found in stock feedback check logfile for further informations.' . PHP_EOL . "Articlenumber: " . $articleNumber . ", discrepancy: " . $discrepancyValue);
                                 }
-                            }
-                            // foreach ($fileContentsByLine as $contentLine)
-                            // {
-                            //     /** @var bool $discrepancy */
-                            //     $discrepancy = false;
-                            //     $lineContents = explode(';', $contentLine);
-                            //     if(count($lineContents) <= 1)
-                            //     {
-                            //         continue;
-                            //     }
-                            //     $available = intval($lineContents[5]);
-                            //     $qsFaulty = intval($lineContents[6]);
-                            //     $qsClarification = intval($lineContents[7]);
-                            //     $qsPostprocessing = intval($lineContents[8]);
-                            //     $qsOther = intval($lineContents[9]);
-                                
-                            //     $articleNumber = $lineContents[1];
-                            //     if(intval($articleNumber) == 99999)
-                            //     {
-                            //         continue;
-                            //     }
-
-                            //     $productRepository = $this->container->get('product.repository');
-                            //     $stockQSRepository = $this->container->get('as_stock_qs.repository');
-
-                            //     /** @var ProductEntity $productEntity */
-                            //     $productEntity = $this->oiUtils->getProduct($productRepository, $articleNumber, $context);
-                            //     if($productEntity == null)
-                            //     {
-                            //         $this->sendErrorNotification('Stock feedback contains unknown product', 'A product mentioned in the daily stock feedback report is unkown. Please check the stock feedback.' . PHP_EOL . $contentLine);
-                            //         continue;
-                            //     }
-                            //     $criteria = new Criteria();
-                            //     $criteria->addFilter(new EqualsFilter('productId',$productEntity->getId()));
-
-                            //     $searchResult = $stockQSRepository->search($criteria,$context);
-                            //     /** @var OrderInterfaceStockQSEntity $stockQSEntity */
-                            //     $stockQSEntity = $searchResult->first();
-                            //     if($productEntity->getStock() != $available)
-                            //     {
-                            //         $discrepancy = true;
-                            //     }
-                            //     if($stockQSEntity->getFaulty() != $qsFaulty)
-                            //     {
-                            //         $discrepancy = true;
-                            //     }
-                            //     if($stockQSEntity->getClarification() != $qsClarification)
-                            //     {
-                            //         $discrepancy = true;
-                            //     }
-                            //     if($stockQSEntity->getPostprocessing() != $qsPostprocessing)
-                            //     {
-                            //         $discrepancy = true;
-                            //     }
-                            //     if($stockQSEntity->getOther() != $qsOther)
-                            //     {
-                            //         $discrepancy = true;
-                            //     }
-                            //     if($discrepancy)
-                            //     {
-                            //         $deleteFilesWhenFinished = false;
-                            //         $this->sendErrorNotification('Stock Feedback Discrepancy','Discrepancies found in stock feedback check logfile for further informations.' . PHP_EOL . "Filecontents:" . PHP_EOL . $contentLine);
-                            //     }
-                            // }                            
+                            }                       
                         break;
                         case 'BS+': // addition of currently available items (items lost but found, etc.)
                             $filecontents = file_get_contents($path . $filename);

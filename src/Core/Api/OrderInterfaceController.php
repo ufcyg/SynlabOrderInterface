@@ -2,6 +2,7 @@
 
 namespace SynlabOrderInterface\Core\Api;
 
+use ASDispositionControl\Core\Content\DispoControlData\DispoControlDataEntity;
 use Shopware\Core\Framework\Context;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Shopware\Core\Framework\Routing\Annotation\RouteScope;
@@ -523,7 +524,7 @@ class OrderInterfaceController extends AbstractController
                         
                         $this->updateProduct($articleNumber, $amount, $amountAvailable, $context);
                         $this->updateQSStock($lineContents, $articleNumber, $context);
-
+                        $this->updateDispoControlData($articleNumber, intval($amount), $context);
 
                         if($amount != $amountAvailable)
                         {
@@ -608,6 +609,25 @@ class OrderInterfaceController extends AbstractController
                 $context
             );
         }
+    }
+
+    private function updateDispoControlData(string $articleNumber, $amount, $context)
+    {
+        $entity = null;
+        /** @var EntityRepositoryInterface $asDispoDataRepository */
+        $asDispoDataRepository = $this->get('as_dispo_control_data.repository');
+        $criteria = new Criteria();
+        $criteria->addFilter(new EqualsFilter('productNumber', $articleNumber));
+
+        /** @var DispoControlDataEntity $entity*/
+        $entity = $asDispoDataRepository->search($criteria,$context)->first();
+
+        if($entity == null || $amount == 0)
+            return;
+
+        $asDispoDataRepository->update([
+            ['id' => $entity->getId(), 'incoming' => $entity->getIncoming()-$amount],
+        ], $context);
     }
 
     /**

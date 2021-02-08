@@ -1,7 +1,7 @@
 {
   "name": "synlab/order-interface",
   "description": "Interface orders with Rieck",
-  "version": "v0.9.6",
+  "version": "v0.9.7",
   "type": "shopware-platform-plugin",
   "license": "proprietary",
   "authors": [
@@ -9,6 +9,9 @@
         "name": "A&S PMO"
     }
   ],
+  "require": {
+    "as/disposition-control": "*.*.*"
+  },
   "autoload": {
     "psr-4": {
       "SynlabOrderInterface\\": "src/"

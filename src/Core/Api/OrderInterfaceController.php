@@ -366,24 +366,34 @@ class OrderInterfaceController extends AbstractController
                     $filecontents = file_get_contents($path . $filename);
                     $fileContentsByLine = explode(PHP_EOL,$filecontents);
 
+                    $condensedArray = array();      
+                    $prevValue = 0;
                     for($x = 1; $x < count($fileContentsByLine); $x++)
                     {
-                        $lineContents = explode(';', $fileContentsByLine[$x]);
-                        if(count($lineContents) <= 1)
-                        {
-                           continue; 
-                        }
-                        $articleNumber = $lineContents[5];
-                        $orderID = $order->getId();
+                        $contentLine = explode(';', $fileContentsByLine[$x]);
+                        if(count($contentLine) <= 1) // skip if line contains no information
+                            continue;
 
+                        // $contentLineFields = explode(';',$contentLine);
+                        $productNumber = $contentLine[5];
+                        if($productNumber == "99999") // skip if line contains information about stored files, they always have the product ID 99999
+                            continue;
+
+                        $prevValue = array_key_exists($productNumber, $condensedArray) ? $condensedArray[$productNumber] : 0;
+                        $condensedArray[$productNumber] = $prevValue + intval($contentLine[6]);
+                    }
+
+                    foreach($condensedArray as $productNumber => $reportedAmount)
+                    {
+                        $orderID = $order->getId();
                         $orderedProducts = $this->oiUtils->getOrderedProducts($orderLineItemRepository, $orderID, $context);
+
                         /** @var OrderLineItemEntity $orderLineItem */
                         foreach($orderedProducts as $orderLineItem)
                         {
-                            $productToCompare = $this->oiUtils->getProduct($this->container->get('product.repository'),$articleNumber,$context);
+                            $productToCompare = $this->oiUtils->getProduct($this->container->get('product.repository'),$productNumber,$context);
                             if($productToCompare->getId() == $orderLineItem->getProductId())
                             {
-                                $reportedAmount = intval($lineContents[6]);
                                 if($orderLineItem->getQuantity() != $reportedAmount)
                                 {
                                     $deleteFilesWhenFinished = false;

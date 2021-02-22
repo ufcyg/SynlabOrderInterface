@@ -129,7 +129,7 @@ class SynlabOrderInterface extends Plugin
             return;
         }
 
-        // Remove all traces of your plugin
+        // Remove all traces of the plugin
         $dir = '../custom/plugins/SynlabOrderInterface/InterfaceData';
         $it = new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS);
         $files = new RecursiveIteratorIterator($it,

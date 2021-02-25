@@ -131,7 +131,7 @@ class OrderInterfaceController extends AbstractController
         $filename = $articlebasePath . '/' . $this->companyID . '.' . 'Artikelstamm-' . $splitPath[6] . '.csv';
         file_put_contents($filename, $csvString);
 
-        $this->sendFile($filename, "/Artikel" . "/artikelstamm" . $this->oiUtils->createShortDateFromString('now') . ".csv");
+        // $this->sendFile($filename, "/Artikel" . "/artikelstamm" . $this->oiUtils->createShortDateFromString('now') . ".csv");
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 

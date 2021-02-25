@@ -200,8 +200,8 @@ class CSVFactory
         $criteria->addFilter(new EqualsFilter('productManufacturerId',$manufacturerID));
         $manufacturer = $manufacturerTranslationRepository->search($criteria,$this->currentContext);
         $manufacturer = $manufacturer->first();
-        $manufacturerName = $manufacturer->getName();
-        return $manufacturerName;
+        
+        return $manufacturer != null ? $manufacturer->getName() : '';
     }
     
     private function getProductTranslation(ProductEntity $product):ProductTranslationEntity

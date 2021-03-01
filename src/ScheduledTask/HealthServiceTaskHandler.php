@@ -26,6 +26,6 @@ class HealthServiceTaskHandler extends ScheduledTaskHandler
 
     public function run(): void
     {
-    //     $this->interfaceController->healthBlimp(Context::createDefaultContext());
+        $this->interfaceController->healthPing(Context::createDefaultContext());
     }    
 }

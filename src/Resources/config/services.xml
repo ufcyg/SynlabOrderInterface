@@ -44,7 +44,6 @@
         <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderTransferTaskHandler">
             <argument type="service" id="scheduled_task.repository" />
             <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
-
             <tag name="messenger.message_handler" />
         </service>
 
@@ -54,7 +53,6 @@
         <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessTaskHandler">
             <argument type="service" id="scheduled_task.repository" />
             <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
-
             <tag name="messenger.message_handler" />
         </service>
 
@@ -64,7 +62,6 @@
         <service id="SynlabOrderInterface\ScheduledTask\HealthServiceTaskHandler">
             <argument type="service" id="scheduled_task.repository" />
             <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
-
             <tag name="messenger.message_handler" />
         </service>
         

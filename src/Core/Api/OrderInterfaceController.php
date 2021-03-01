@@ -28,6 +28,8 @@ use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Pricing\Price;
 use ASMailService\Core\MailServiceHelper;
+use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTask;
+use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTaskEntity;
 use SynlabOrderInterface\Core\Content\StockQS\OrderInterfaceStockQSEntity;
 
 /**
@@ -1238,5 +1240,42 @@ class OrderInterfaceController extends AbstractController
     private function sendFile(string $filePath, string $destinationPath)
     {
         $this->sftpController->pushFile($filePath, $destinationPath);
+    }
+
+    /**
+     * @Route("/api/v{version}/_action/synlab-order-interface/healthPing", name="api.custom.synlab_order_interface.healthPing", methods={"POST"})
+     * @param Context $context;
+     * @return Response
+     */
+    public function healthPing(Context $context)
+    {
+        /** @var EntityRepositoryInterface $scheduledTaskRepository */
+        $scheduledTaskRepository = $this->container->get('scheduled_task.repository');
+        $scheduledTasks = $scheduledTaskRepository->search(new Criteria(),Context::createDefaultContext());
+
+        /** @var ScheduledTaskEntity $scheduledTask */
+        foreach($scheduledTasks as $taskID => $scheduledTask)
+        {
+            $scheduledTaskName = $scheduledTask->getName();
+            if(! $this->isMyScheduledTaskCk($scheduledTaskName))
+                continue;
+
+            $taskStatus = $scheduledTask->getStatus();
+            if($taskStatus == 'failed')
+            {
+                $this->sendErrorNotification('Scheduled Task Failed', "Task $scheduledTaskName has failed.<br>Check dead messages for further informations.", ['']);
+            }
+        }
+
+        return new Response('',Response::HTTP_NO_CONTENT);
+    }
+    private function isMyScheduledTaskCk(string $taskName): bool
+    {
+        if($taskName == 'synlab.scheduled_order_transfer_task')
+            return true;
+        if($taskName == 'synlab.scheduled_order_process_task')
+            return true;
+            
+        return false;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace SynlabOrderInterface\Core\Api;
 
+use ASControllingReport\Core\Api\ASControllingReportController;
 use ASDispositionControl\Core\Content\DispoControlData\DispoControlDataEntity;
 use Shopware\Core\Framework\Context;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,7 +29,6 @@ use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Pricing\Price;
 use ASMailService\Core\MailServiceHelper;
-use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTask;
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTaskEntity;
 use SynlabOrderInterface\Core\Content\StockQS\OrderInterfaceStockQSEntity;
 
@@ -57,11 +57,14 @@ class OrderInterfaceController extends AbstractController
     private $mailserviceHelper;
     /** @var string $senderName */
     private $senderName;
+    /** @var ASControllingReportController $controllingReportController */
+    private $controllingReportController;
     public function __construct(SystemConfigService $systemConfigService,
                                 OrderInterfaceRepositoryContainer $repositoryContainer,
                                 OrderInterfaceUtils $oiUtils,
                                 OIOrderServiceUtils $oiOrderServiceUtils,
-                                MailServiceHelper $mailserviceHelper)
+                                MailServiceHelper $mailserviceHelper,
+                                ASControllingReportController $controllingReportController)
     {
         $this->systemConfigService = $systemConfigService;
         $this->repositoryContainer = $repositoryContainer;
@@ -70,6 +73,7 @@ class OrderInterfaceController extends AbstractController
         $this->oiOrderServiceUtils = $oiOrderServiceUtils;
         $this->mailserviceHelper = $mailserviceHelper;
         $this->senderName = 'Order Interface';
+        $this->controllingReportController = $controllingReportController;
 
         $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
         $this->csvFactory = new CSVFactory($this->companyID, $this->repositoryContainer, $this->oiUtils);
@@ -375,8 +379,11 @@ class OrderInterfaceController extends AbstractController
                     for($x = 1; $x < count($fileContentsByLine); $x++)
                     {
                         $contentLine = explode(';', $fileContentsByLine[$x]);
+
                         if(count($contentLine) <= 1) // skip if line contains no information
                             continue;
+                            
+                        $this->controllingReportController->generateControllingEntityFromVLE($contentLine);
 
                         // $contentLineFields = explode(';',$contentLine);
                         $productNumber = $contentLine[5];
@@ -1273,9 +1280,15 @@ class OrderInterfaceController extends AbstractController
     {
         if($taskName == 'synlab.scheduled_order_transfer_task')
             return true;
-        if($taskName == 'synlab.scheduled_order_process_task')
+        if($taskName == 'synlab.scheduled_order_process_article_error')
             return true;
-            
+        if($taskName == 'synlab.scheduled_order_process_rmwa')
+            return true;
+        if($taskName == 'synlab.scheduled_order_process_rmwe')
+            return true;
+        if($taskName == 'synlab.scheduled_order_process_stock_feedback')
+            return true;
+    
         return false;
     }
 }

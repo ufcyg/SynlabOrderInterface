@@ -8,7 +8,7 @@ use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTaskHandler;
 use SynlabOrderInterface\Core\Api\OrderInterfaceController;
 
 
-class ScheduledOrderProcessTaskHandler extends ScheduledTaskHandler
+class ScheduledOrderProcessArticleErrorTaskHandler extends ScheduledTaskHandler
 {
     /** @var OrderInterfaceController $interfaceController */
     private $interfaceController;
@@ -21,11 +21,11 @@ class ScheduledOrderProcessTaskHandler extends ScheduledTaskHandler
 
     public static function getHandledMessages(): iterable
     {
-        return [ ScheduledOrderProcessTask::class ];
+        return [ ScheduledOrderProcessArticleErrorTask::class ];
     }
 
     public function run(): void
     {
-        $this->interfaceController->processAnswers(Context::createDefaultContext());
+        $this->interfaceController->pullArticleError(Context::createDefaultContext());
     }    
 }

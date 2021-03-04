@@ -15,14 +15,14 @@ class Migration1610527466StockQS extends MigrationStep
     public function update(Connection $connection): void
     {
         $connection->exec("CREATE TABLE IF NOT EXISTS `as_stock_qs` (
-            `id`            BINARY(16) NOT NULL,
-            `product_id`    VARCHAR(255) NOT NULL,
-            `faulty`    INTEGER NOT NULL,
-            `clarification`    INTEGER NOT NULL,
+            `id`                BINARY(16) NOT NULL,
+            `product_id`        VARCHAR(255) NOT NULL,
+            `faulty`            INTEGER NOT NULL,
+            `clarification`     INTEGER NOT NULL,
             `postprocessing`    INTEGER NOT NULL,
-            `other`    INTEGER NOT NULL,
-            `created_at`    DATETIME(3),
-            `updated_at`    DATETIME(3)
+            `other`             INTEGER NOT NULL,
+            `created_at`        DATETIME(3),
+            `updated_at`        DATETIME(3)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
     }
 

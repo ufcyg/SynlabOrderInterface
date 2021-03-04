@@ -33,11 +33,14 @@
             <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" />
             <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils" />
             <argument type="service" id="ASMailService\Core\MailServiceHelper" />
+            <argument type="service" id="ASControllingReport\Core\Api\ASControllingReportController" />
             <call method="setContainer">
                 <argument type="service" id="service_container" />
             </call>
         </service>
 
+<!-- scheduled tasks -->
+<!-- orderTransfer -->
         <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderTransferTask">
             <tag name="shopware.scheduled.task" />
         </service>
@@ -46,20 +49,47 @@
             <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
             <tag name="messenger.message_handler" />
         </service>
-
-        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessTask">
-            <tag name="shopware.scheduled.task" />
-        </service>
-        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessTaskHandler">
-            <argument type="service" id="scheduled_task.repository" />
-            <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
-            <tag name="messenger.message_handler" />
-        </service>
-
+<!-- healthPing -->
         <service id="SynlabOrderInterface\ScheduledTask\HealthServiceTask">
             <tag name="shopware.scheduled.task" />
         </service>
         <service id="SynlabOrderInterface\ScheduledTask\HealthServiceTaskHandler">
+            <argument type="service" id="scheduled_task.repository" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
+            <tag name="messenger.message_handler" />
+        </service>
+<!-- pullBestand -->
+        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessStockFeedbackTask">
+            <tag name="shopware.scheduled.task" />
+        </service>
+        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessStockFeedbackTaskHandler">
+            <argument type="service" id="scheduled_task.repository" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
+            <tag name="messenger.message_handler" />
+        </service>
+<!-- pullArticleError -->
+        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessArticleErrorTask">
+            <tag name="shopware.scheduled.task" />
+        </service>
+        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessArticleErrorTaskHandler">
+            <argument type="service" id="scheduled_task.repository" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
+            <tag name="messenger.message_handler" />
+        </service>
+<!-- pullRMWA -->
+        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessRMWATask">
+            <tag name="shopware.scheduled.task" />
+        </service>
+        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessRMWATaskHandler">
+            <argument type="service" id="scheduled_task.repository" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
+            <tag name="messenger.message_handler" />
+        </service>
+<!-- pullRMWE -->
+        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessRMWETask">
+            <tag name="shopware.scheduled.task" />
+        </service>
+        <service id="SynlabOrderInterface\ScheduledTask\ScheduledOrderProcessRMWETaskHandler">
             <argument type="service" id="scheduled_task.repository" />
             <argument type="service" id="SynlabOrderInterface\Core\Api\OrderInterfaceController" />
             <tag name="messenger.message_handler" />

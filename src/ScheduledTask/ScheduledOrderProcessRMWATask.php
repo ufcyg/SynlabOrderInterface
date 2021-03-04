@@ -4,11 +4,11 @@ namespace SynlabOrderInterface\ScheduledTask;
 
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTask;
 
-class ScheduledOrderProcessTask extends ScheduledTask
+class ScheduledOrderProcessRMWATask extends ScheduledTask
 {
     public static function getTaskName(): string
     {
-        return 'synlab.scheduled_order_process_task';
+        return 'synlab.scheduled_order_process_rmwa';
     }
 
     public static function getDefaultInterval(): int

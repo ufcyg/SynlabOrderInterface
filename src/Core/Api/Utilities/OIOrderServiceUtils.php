@@ -2,6 +2,7 @@
 namespace SynlabOrderInterface\Core\Api\Utilities;
 
 use Shopware\Core\Checkout\Order\Aggregate\OrderDelivery\OrderDeliveryEntity;
+use Shopware\Core\Checkout\Order\Aggregate\OrderTransaction\OrderTransactionEntity;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Checkout\Order\SalesChannel\OrderService;
 use Shopware\Core\Framework\Context;
@@ -103,6 +104,50 @@ class OIOrderServiceUtils
             break;
         }
         $this->orderService->orderDeliveryStateTransition($entityID, $transition, new ParameterBag([]),Context::createDefaultContext());
+        return true;
+    }
+
+    public function updatePaymentStatus(OrderTransactionEntity $transaction, string $entityID, $transition) {   
+        $stateName = $transaction->getStateMachineState()->getTechnicalName();
+        switch ($stateName)
+        {
+            case "open":
+                if(!(strcmp($transition,'pay') == 0 || strcmp($transition,'remind') == 0 || strcmp($transition,'pay_partially') == 0 || strcmp($transition,'cancel') == 0))
+                {
+                    
+                    return false;
+                }
+            break;
+            
+            case "paid_partially":
+                if(!(strcmp($transition,'refund_partially') == 0 || strcmp($transition,'refund') == 0 || strcmp($transition,'remind') == 0 || strcmp($transition,'pay') == 0))
+                {
+                    return false;
+                }
+            break;
+            
+            case "reminded":
+                if(!(strcmp($transition,'pay') == 0 || strcmp($transition,'pay_partially') == 0))
+                {
+                    return false;
+                }
+            break;
+            
+            case "paid":
+                if(!(strcmp($transition,'refund_partially') == 0 || strcmp($transition,'refund') == 0 ))
+                {
+                    return false;
+                }
+            break;
+            
+            case "refunded_partially":
+                if(!(strcmp($transition,'refund') == 0))
+                {
+                    return false;
+                }
+            break;
+        }
+        $this->orderService->orderTransactionStateTransition($entityID, $transition, new ParameterBag([]),Context::createDefaultContext());
         return true;
     }
 }

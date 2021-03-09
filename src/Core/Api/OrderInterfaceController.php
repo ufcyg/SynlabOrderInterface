@@ -131,6 +131,10 @@ class OrderInterfaceController extends AbstractController
         }
         $articlebasePath = $this->oiUtils->createTodaysFolderPath('Articlebase');
         $splitPath = explode('/',$articlebasePath);
+
+        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
+        chdir($WORK_DIR);
+
         if (!file_exists($articlebasePath)) {
             mkdir($articlebasePath, 0777, true);
         }   
@@ -230,6 +234,10 @@ class OrderInterfaceController extends AbstractController
     {
         $folderPath = $this->oiUtils->createTodaysFolderPath('SubmittedOrders/');
         $folderPath = $folderPath . '/' . $orderNumber . '/';
+
+        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
+        chdir($WORK_DIR);
+
         if (!file_exists($folderPath)) {
             mkdir($folderPath, 0777, true);
         }
@@ -247,6 +255,10 @@ class OrderInterfaceController extends AbstractController
     public function pullRMWA(Context $context): ?Response
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA');
+
+        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
+        chdir($WORK_DIR);
+
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
@@ -466,6 +478,10 @@ class OrderInterfaceController extends AbstractController
     public function pullRMWE(Context $context): ?Response
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WE');
+
+        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
+        chdir($WORK_DIR);
+
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
@@ -663,6 +679,10 @@ class OrderInterfaceController extends AbstractController
     public function pullArticleError(Context $context): ?Response
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Artikel_Error');
+
+        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
+        chdir($WORK_DIR);
+
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
@@ -702,6 +722,10 @@ class OrderInterfaceController extends AbstractController
     public function pullBestand(Context $context): ?Response
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand');
+
+        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
+        chdir($WORK_DIR);
+
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
@@ -1224,6 +1248,10 @@ class OrderInterfaceController extends AbstractController
                     $archivePath = $archivePath . 'Archive' . '/';
                 }
             }
+
+            $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
+            chdir($WORK_DIR);
+
             if (!file_exists($archivePath)) {
                 mkdir($archivePath, 0777, true);
             }

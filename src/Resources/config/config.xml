@@ -63,7 +63,9 @@
             <helpText>Input the matching password for given username.</helpText>
             <helpText lang="de-DE">Geben Sie das dem Nutzernamen entsprechende Passwort ein.</helpText>
         </input-field>
-
+    </card>
+    <card>
+        <title>Notification settings</title>
         <input-field type="bool">
             <name>deleteFilesAfterEvaluation</name>
             <label>Delete transmitted files after evaluation</label>
@@ -87,7 +89,9 @@
             <entity>sales_channel</entity>
             <label>Choose a fallback sales channel as origin for notifications if no other sales channel is known</label>
         </component>
-
+    </card>
+    <card>
+        <title>Working Directory</title>
         <input-field>
             <name>workingDirectory</name>
             <label>Enter the working directory here</label>

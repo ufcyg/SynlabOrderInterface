@@ -24,16 +24,19 @@ class SFTPController
     private $password;
     /** @var string $homeDirectory */
     private $homeDirectory;
+    /** @var string $workDir */
+    private $workDir;
     /** @var resource */
     private $connection;
 
-    public function __construct(string $host, string $port, string $username, string $password, string $homeDirectory)
+    public function __construct(string $host, string $port, string $username, string $password, string $homeDirectory, string $workDir)
     {
         $this->host = $host;
         $this->port = $port;
         $this->username = $username;
         $this->password = $password;
         $this->homeDirectory = $homeDirectory;
+        $this->workDir = $workDir;
     }
 
     /* Opens the connection to the $host via $port */
@@ -56,6 +59,7 @@ class SFTPController
     /* Writes local file on remote sFTP server */
     public function pushFile(string $originPath, string $destinationPath)
     {
+        chdir($this->workDir);
         if ($this->openConnection()) {//connected
             if ($this->authConnection()) {//authenticated
                 $sftp = ssh2_sftp($this->connection);
@@ -70,6 +74,8 @@ class SFTPController
     /* Copies a file from the remote sFTP server to local disc for evaluation */
     public function pullFile(string $localDir, string $remoteDir)
     {
+        chdir($this->workDir);
+        
         if (!function_exists("ssh2_connect")) {
             die('Function ssh2_connect not found, you cannot use ssh2 here');
         }

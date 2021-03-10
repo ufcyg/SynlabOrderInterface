@@ -90,7 +90,7 @@ class SFTPController
                                         getcwd(),
                                         getcwd(),
                                         ['']);
-        chdir($this->workDir);
+        chdir($localDir);
         $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
                                         $notificationSalesChannel,
                                         'pull file',
@@ -128,11 +128,24 @@ class SFTPController
         
         foreach ($files as $file) {
             // echo "Copying file: $file\n";
+            $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'fopen remote',
+                                        getcwd(),
+                                        getcwd(),
+                                        ['']);
             if (!$remote = @fopen('ssh2.sftp://' . intval($stream) . $this->homeDirectory . $remoteDir . '/' . $file, 'r')) {
                 echo "Unable to open remote file: $file\n";
                 continue;
             }
-
+            $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'fopen local',
+                                        getcwd(),
+                                        getcwd(),
+                                        ['']);
             if (!$local = @fopen($localDir . '/' . $file, 'w')) {
                 echo "Unable to create local file: $file\n";
                 continue;

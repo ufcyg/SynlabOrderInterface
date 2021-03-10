@@ -747,6 +747,7 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
+        chdir($path);
         $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
                                         $notificationSalesChannel,
                                         'pull bestand',

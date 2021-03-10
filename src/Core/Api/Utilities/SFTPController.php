@@ -111,16 +111,17 @@ class SFTPController
                                         getcwd(),
                                         ['']);
 try{
-        if (!$connection = ssh2_connect($this->host, intval($this->port))) {
-            $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'Unable to connect',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
-            die('Unable to connect');
-        }
+    $connection = ssh2_connect($this->host, intval($this->port))
+        // if (!$connection = ssh2_connect($this->host, intval($this->port))) {
+            // $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+            //                             $notificationSalesChannel,
+            //                             'pull file',
+            //                             'Unable to connect',
+            //                             getcwd(),
+            //                             getcwd(),
+            //                             ['']);
+            // die('Unable to connect');
+        // }
     }
     catch (Exception $e)
     {

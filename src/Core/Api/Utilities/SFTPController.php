@@ -31,11 +31,7 @@ class SFTPController
     /** @var resource */
     private $connection;
 
-    /** @var MailServiceHelper $mailService */
-    private $mailService;
-    /** @var SystemConfigService $systemConfigService */
-    private $systemConfigService;
-    public function __construct(string $host, string $port, string $username, string $password, string $homeDirectory, string $workDir, MailServiceHelper $mailService, SystemConfigService $systemConfigService)
+    public function __construct(string $host, string $port, string $username, string $password, string $homeDirectory, string $workDir)
     {
         $this->host = $host;
         $this->port = $port;
@@ -43,8 +39,6 @@ class SFTPController
         $this->password = $password;
         $this->homeDirectory = $homeDirectory;
         $this->workDir = $workDir;
-        $this->mailService = $mailService;
-        $this->systemConfigService = $systemConfigService;
     }
 
     /* Opens the connection to the $host via $port */
@@ -82,115 +76,30 @@ class SFTPController
     /* Copies a file from the remote sFTP server to local disc for evaluation */
     public function pullFile(string $localDir, string $remoteDir)
     {
-        $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
-        $extensions = get_loaded_extensions();
-        $extString = '';
-        foreach ($extensions as $key => $extName)
-        {
-            $extString .= $extName . ';';
+        chdir($localDir);
+
+        if (!function_exists("ssh2_connect")) {
+            throw new Exception('Function ssh2_connect not found, you cannot use ssh2 here.');
         }
         
-        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'loaded Extensions',
-                                        $extString,
-                                        $extString,
-                                        ['']);
-
-        // $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-        //                                 $notificationSalesChannel,
-        //                                 'pull file',
-        //                                 'pre chdir in sftpC',
-        //                                 getcwd(),
-        //                                 getcwd(),
-        //                                 ['']);
-        chdir($localDir);
-        // $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-        //                                 $notificationSalesChannel,
-        //                                 'pull file',
-        //                                 'post chdir in sftpC',
-        //                                 getcwd(),
-        //                                 getcwd(),
-        //                                 ['']);
-
-        // if (!function_exists("ssh2_connect")) {
-        //     die('Function ssh2_connect not found, you cannot use ssh2 here');
-        // }
-
-        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'pre ssh2_connect in sftpC',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
-try{
-    $connection = ssh2_connect($this->host, intval($this->port));
-        // if (!$connection = ssh2_connect($this->host, intval($this->port))) {
-            // $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-            //                             $notificationSalesChannel,
-            //                             'pull file',
-            //                             'Unable to connect',
-            //                             getcwd(),
-            //                             getcwd(),
-            //                             ['']);
-            // die('Unable to connect');
-        // }
-    }
-    catch (Exception $e)
-    {
-        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'Unable to connect',
-                                        $e->getMessage(),
-                                        $e->getMessage(),
-                                        ['']);
-    }
-        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'post ssh2_connect in sftpC',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
-
-        if (!ssh2_auth_password($connection, $this->username, $this->password)) {
-            die('Unable to authenticate.');
+        if(!$connection = ssh2_connect($this->host, intval($this->port)))
+        {
+            throw new Exception('Unable to connect.');
         }
 
-        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'post ssh2_auth_password in sftpC',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
-
-        if (!$stream = ssh2_sftp($connection)) {
-            die('Unable to create a stream.');
+        if (!ssh2_auth_password($connection, $this->username, $this->password)) 
+        {
+            throw new Exception('Unable to authenticate.');
         }
 
-        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'post ssh2_sftp in sftpC',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
+        if (!$stream = ssh2_sftp($connection)) 
+        {
+            throw new Exception('Unable to create a stream.');
+        }
 
         if (!$dir = opendir('ssh2.sftp://' . intval($stream) . $this->homeDirectory . $remoteDir)) {
-            die('Could not open the directory');
+            throw new Exception('Could not open the directory.');
         }
-
-        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'post opendir in sftpC',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
         
         $files = array();
         while (false !== ($file = readdir($dir))) {
@@ -202,26 +111,12 @@ try{
         
         foreach ($files as $file) {
             // echo "Copying file: $file\n";
-            $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'fopen remote',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
             if (!$remote = @fopen('ssh2.sftp://' . intval($stream) . $this->homeDirectory . $remoteDir . '/' . $file, 'r')) {
-                echo "Unable to open remote file: $file\n";
+                throw new Exception("Unable to open remote file: $file");
                 continue;
             }
-            $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'fopen local',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
             if (!$local = @fopen($localDir . '/' . $file, 'w')) {
-                echo "Unable to create local file: $file\n";
+                throw new Exception("Unable to create local file: $file\n");
                 continue;
             }
 
@@ -230,12 +125,12 @@ try{
             while ($read < $filesize && ($buffer = fread($remote, $filesize - $read))) {
                 $read += strlen($buffer);
                 if (fwrite($local, $buffer) === false) {
-                    echo "Unable to write to local file: $file\n";
+                    throw new Exception("Unable to write to local file: $file");
                     break;
                 }
             }
             fclose($local);
-            // ssh2_sftp_unlink($stream, $this->homeDirectory . $remoteDir . '/' . $file);
+            ssh2_sftp_unlink($stream, $this->homeDirectory . $remoteDir . '/' . $file);
             fclose($remote);            
         }
         closedir($dir);

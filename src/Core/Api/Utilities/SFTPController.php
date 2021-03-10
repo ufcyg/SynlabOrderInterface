@@ -138,7 +138,7 @@ class SFTPController
                                         getcwd().'<br>'.$localDir . '/' . $file,
                                         getcwd().'<br>'.$localDir . '/' . $file,
                                         ['']);
-            if (!$local = @fopen($localDir . '/' . $file, 'w')) {
+            if (!$local = @fopen(getcwd() . '/' . $file, 'w')) {
                 throw new Exception("Unable to create local file: $file\n");
                 continue;
             }

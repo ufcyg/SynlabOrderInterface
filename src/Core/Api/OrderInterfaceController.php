@@ -84,7 +84,7 @@ class OrderInterfaceController extends AbstractController
         $homeDirectory = $this->systemConfigService->get('SynlabOrderInterface.config.homeDirectory');
 
         $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
-        $this->sftpController = new SFTPController($ipAddress, $port, $username, $password, $homeDirectory,$WORK_DIR);
+        $this->sftpController = new SFTPController($ipAddress, $port, $username, $password, $homeDirectory,$WORK_DIR,$systemConfigService,$mailserviceHelper);
     }
 
     /**

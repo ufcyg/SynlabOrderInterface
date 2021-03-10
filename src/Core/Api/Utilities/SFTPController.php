@@ -120,7 +120,7 @@ class SFTPController
         
         foreach ($files as $file) {
             // echo "Copying file: $file\n";
-            $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+            $this->mailServiceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
                                         $notificationSalesChannel,
                                         'Pull File',
                                         'pre Fopen remote',
@@ -131,7 +131,7 @@ class SFTPController
                 throw new Exception("Unable to open remote file: $file");
                 continue;
             }
-            $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+            $this->mailServiceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
                                         $notificationSalesChannel,
                                         'Pull File',
                                         'Fopen local',

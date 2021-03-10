@@ -747,7 +747,21 @@ class OrderInterfaceController extends AbstractController
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
+        $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull bestand',
+                                        'pre file pull',
+                                        $path,
+                                        $path,
+                                        ['']);
         $this->sftpController->pullFile($path,'Bestand');
+        $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull bestand',
+                                        'post file pull',
+                                        $path,
+                                        $path,
+                                        ['']);
         return $this->checkBestand($context);
     }
     /**

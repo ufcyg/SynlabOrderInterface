@@ -85,11 +85,11 @@ class SFTPController
         $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
         $extensions = get_loaded_extensions();
         $extString = '';
-        foreach ($extensions as $key => $value)
+        foreach ($extensions as $key => $extName)
         {
-            $extString += $value . ';';
+            $extString .= $extName . ';';
         }
-
+        
         $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
                                         $notificationSalesChannel,
                                         'pull file',

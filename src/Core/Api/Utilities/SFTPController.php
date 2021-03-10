@@ -111,7 +111,7 @@ class SFTPController
                                         getcwd(),
                                         ['']);
 try{
-    $connection = ssh2_connect($this->host, intval($this->port))
+    $connection = ssh2_connect($this->host, intval($this->port));
         // if (!$connection = ssh2_connect($this->host, intval($this->port))) {
             // $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
             //                             $notificationSalesChannel,

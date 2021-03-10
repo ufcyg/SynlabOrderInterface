@@ -25,7 +25,6 @@ use SynlabOrderInterface\Core\Content\StockQS\OrderInterfaceStockQSEntity;
 
 class OrderInterfaceUtils
 {
-    private $container;
     /** @var string $folderRoot */
     private $folderRoot;
     /** @var string $todaysFolderPath */
@@ -35,7 +34,22 @@ class OrderInterfaceUtils
     
     public function __construct(OrderInterfaceRepositoryContainer $repositoryContainer)
     {
-        $this->folderRoot = '../custom/plugins/SynlabOrderInterface/InterfaceData/';
+        $splitDir = explode('/', getcwd());
+            $WORK_DIR = '/';
+            foreach($splitDir as $dirPart)
+            {
+                if($dirPart == '')
+                {
+                    continue;
+                }
+                $WORK_DIR = $WORK_DIR . $dirPart . '/' ;
+                if($dirPart == 'public')
+                {
+                    $WORK_DIR = $WORK_DIR . 'custom/plugins/SynlabOrderInterface/InterfaceData/';
+                }
+            }
+        $this->folderRoot = $WORK_DIR;
+        // $this->folderRoot = '../custom/plugins/SynlabOrderInterface/InterfaceData/';
         $this->todaysFolderPath = '';
         $this->repositoryContainer = $repositoryContainer;
     }

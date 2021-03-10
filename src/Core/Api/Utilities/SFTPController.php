@@ -83,6 +83,21 @@ class SFTPController
     public function pullFile(string $localDir, string $remoteDir)
     {
         $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
+        $extensions = get_loaded_extensions();
+        $extString = '';
+        foreach ($extensions as $key => $value)
+        {
+            $extString += $value . ';';
+        }
+
+        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'loaded Extensions',
+                                        $extString,
+                                        $extString,
+                                        ['']);
+
         // $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
         //                                 $notificationSalesChannel,
         //                                 'pull file',

@@ -103,20 +103,61 @@ class SFTPController
             die('Function ssh2_connect not found, you cannot use ssh2 here');
         }
 
+        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'pre ssh2_connect in sftpC',
+                                        getcwd(),
+                                        getcwd(),
+                                        ['']);
+
         if (!$connection = ssh2_connect($this->host, intval($this->port))) {
             die('Unable to connect');
         }
+
+        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'post ssh2_connect in sftpC',
+                                        getcwd(),
+                                        getcwd(),
+                                        ['']);
 
         if (!ssh2_auth_password($connection, $this->username, $this->password)) {
             die('Unable to authenticate.');
         }
 
+        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'post ssh2_auth_password in sftpC',
+                                        getcwd(),
+                                        getcwd(),
+                                        ['']);
+
         if (!$stream = ssh2_sftp($connection)) {
             die('Unable to create a stream.');
         }
+
+        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'post ssh2_sftp in sftpC',
+                                        getcwd(),
+                                        getcwd(),
+                                        ['']);
+
         if (!$dir = opendir('ssh2.sftp://' . intval($stream) . $this->homeDirectory . $remoteDir)) {
             die('Could not open the directory');
         }
+
+        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'post opendir in sftpC',
+                                        getcwd(),
+                                        getcwd(),
+                                        ['']);
         
         $files = array();
         while (false !== ($file = readdir($dir))) {

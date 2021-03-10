@@ -135,8 +135,8 @@ class SFTPController
                                         $notificationSalesChannel,
                                         'Pull File',
                                         'Fopen local',
-                                        $localDir . '/' . $file,
-                                        $localDir . '/' . $file,
+                                        getcwd().'<br>'.$localDir . '/' . $file,
+                                        getcwd().'<br>'.$localDir . '/' . $file,
                                         ['']);
             if (!$local = @fopen($localDir . '/' . $file, 'w')) {
                 throw new Exception("Unable to create local file: $file\n");

@@ -18,6 +18,9 @@
 
         <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" public="true">
             <argument id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer" type="service" />
+            <call method="setContainer">
+                <argument type="service" id="service_container" />
+            </call>
         </service>
 
         <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer" public="true">

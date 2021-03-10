@@ -69,7 +69,7 @@ class OrderInterfaceController extends AbstractController
         $this->systemConfigService = $systemConfigService;
         $this->repositoryContainer = $repositoryContainer;
         $this->oiUtils = $oiUtils;
-        $oiUtils->setContainer($this->container);
+        // $oiUtils->setContainer($this->container);
         $this->oiOrderServiceUtils = $oiOrderServiceUtils;
         $this->mailserviceHelper = $mailserviceHelper;
         $this->senderName = 'Order Interface';
@@ -95,7 +95,7 @@ class OrderInterfaceController extends AbstractController
      */
     public function dummyRoute(Context $context)
     {
-        
+        $this->oiUtils->containerTest();
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 

@@ -8,6 +8,7 @@ OrderInterfaceUtils holds most helper functions for the order interface controll
 
 namespace SynlabOrderInterface\Core\Api\Utilities;
 
+use Psr\Container\ContainerInterface;
 use DateInterval;
 use DateTime;
 use Shopware\Core\Checkout\Order\Aggregate\OrderAddress\OrderAddressEntity;
@@ -31,6 +32,8 @@ class OrderInterfaceUtils
     private $todaysFolderPath;
     /** @var OrderInterfaceRepositoryContainer $repositoryContainer*/
     private $repositoryContainer;
+    /** @var ContainerInterface $container */
+    protected $container;
     
     public function __construct(OrderInterfaceRepositoryContainer $repositoryContainer)
     {
@@ -53,7 +56,25 @@ class OrderInterfaceUtils
         $this->todaysFolderPath = '';
         $this->repositoryContainer = $repositoryContainer;
     }
+    
 
+    /**
+     * @internal
+     * @required
+     */
+    public function setContainer(ContainerInterface $container): ?ContainerInterface
+    {
+        $previous = $this->container;
+        $this->container = $container;
+
+        return $previous;
+    }
+
+    public function containerTest()
+    {
+        /** @var EntityRepositoryInterface $deadMessagesRepo */
+        $deadMessagesRepo = $this->container->get('product.repository');
+    }
     /* Gets an already created criteria and extends it with a date filter*/
     public function addCriteriaFilterDate(Criteria $criteria): Criteria
     {
@@ -275,13 +296,5 @@ class OrderInterfaceUtils
         $searchResult = $cancelConfirmationRepository->search($criteria, $context);
         
         return count($searchResult) != 0 ? true : false;
-    }
-
-    /** Set the value of container @return  self */ 
-    public function setContainer($container)
-    {
-        $this->container = $container;
-
-        return $this;
     }
 }

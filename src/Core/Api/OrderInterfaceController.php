@@ -1250,8 +1250,25 @@ class OrderInterfaceController extends AbstractController
                 }
             }
 
+            $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
+            $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                            $notificationSalesChannel,
+                                            'check bestand',
+                                            'pre chdir',
+                                            getcwd(),
+                                            getcwd(),
+                                            ['']);
+
             $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
             chdir($WORK_DIR);
+
+            $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                            $notificationSalesChannel,
+                                            'check bestand',
+                                            'pre chdir',
+                                            getcwd(),
+                                            getcwd(),
+                                            ['']);
 
             if (!file_exists($archivePath)) {
                 mkdir($archivePath, 0777, true);

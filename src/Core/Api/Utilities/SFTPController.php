@@ -2,7 +2,9 @@
 
 namespace SynlabOrderInterface\Core\Api\Utilities;
 
+use ASMailService\Core\MailServiceHelper;
 use Exception;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Symfony\Component\HttpFoundation\Response;
 
 /*
@@ -29,7 +31,11 @@ class SFTPController
     /** @var resource */
     private $connection;
 
-    public function __construct(string $host, string $port, string $username, string $password, string $homeDirectory, string $workDir)
+    /** @var MailServiceHelper $mailService */
+    private $mailService;
+    /** @var SystemConfigService $systemConfigService */
+    private $systemConfigService;
+    public function __construct(string $host, string $port, string $username, string $password, string $homeDirectory, string $workDir, MailServiceHelper $mailService, SystemConfigService $systemConfigService)
     {
         $this->host = $host;
         $this->port = $port;
@@ -37,6 +43,8 @@ class SFTPController
         $this->password = $password;
         $this->homeDirectory = $homeDirectory;
         $this->workDir = $workDir;
+        $this->mailService = $mailService;
+        $this->systemConfigService = $systemConfigService;
     }
 
     /* Opens the connection to the $host via $port */
@@ -74,8 +82,23 @@ class SFTPController
     /* Copies a file from the remote sFTP server to local disc for evaluation */
     public function pullFile(string $localDir, string $remoteDir)
     {
+        $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
+        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'pre chdir in sftpC',
+                                        getcwd(),
+                                        getcwd(),
+                                        ['']);
         chdir($this->workDir);
-        
+        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'post chdir in sftpC',
+                                        getcwd(),
+                                        getcwd(),
+                                        ['']);
+
         if (!function_exists("ssh2_connect")) {
             die('Function ssh2_connect not found, you cannot use ssh2 here');
         }
@@ -125,7 +148,7 @@ class SFTPController
                 }
             }
             fclose($local);
-            ssh2_sftp_unlink($stream, $this->homeDirectory . $remoteDir . '/' . $file);
+            // ssh2_sftp_unlink($stream, $this->homeDirectory . $remoteDir . '/' . $file);
             fclose($remote);            
         }
         closedir($dir);

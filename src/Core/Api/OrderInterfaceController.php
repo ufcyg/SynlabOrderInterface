@@ -84,7 +84,7 @@ class OrderInterfaceController extends AbstractController
         $homeDirectory = $this->systemConfigService->get('SynlabOrderInterface.config.homeDirectory');
 
         $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
-        $this->sftpController = new SFTPController($ipAddress, $port, $username, $password, $homeDirectory,$WORK_DIR);
+        $this->sftpController = new SFTPController($ipAddress, $port, $username, $password, $homeDirectory,$WORK_DIR, $mailserviceHelper,$systemConfigService);
     }
 
     /**
@@ -725,24 +725,24 @@ class OrderInterfaceController extends AbstractController
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand');
 
         $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
-        $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull bestand',
-                                        'pre chdir',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
+        // $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+        //                                 $notificationSalesChannel,
+        //                                 'pull bestand',
+        //                                 'pre chdir',
+        //                                 getcwd(),
+        //                                 getcwd(),
+        //                                 ['']);
 
         $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
         chdir($WORK_DIR);
 
-        $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull bestand',
-                                        'post chdir',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
+        // $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+        //                                 $notificationSalesChannel,
+        //                                 'pull bestand',
+        //                                 'post chdir',
+        //                                 getcwd(),
+        //                                 getcwd(),
+        //                                 ['']);
 
         if (!file_exists($path)) {
             mkdir($path, 0777, true);

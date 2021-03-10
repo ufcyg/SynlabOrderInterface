@@ -99,9 +99,9 @@ class SFTPController
                                         getcwd(),
                                         ['']);
 
-        if (!function_exists("ssh2_connect")) {
-            die('Function ssh2_connect not found, you cannot use ssh2 here');
-        }
+        // if (!function_exists("ssh2_connect")) {
+        //     die('Function ssh2_connect not found, you cannot use ssh2 here');
+        // }
 
         $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
                                         $notificationSalesChannel,

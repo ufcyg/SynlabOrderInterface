@@ -724,45 +724,14 @@ class OrderInterfaceController extends AbstractController
     {
         $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand');
 
-        $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
-        // $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-        //                                 $notificationSalesChannel,
-        //                                 'pull bestand',
-        //                                 'pre chdir',
-        //                                 getcwd(),
-        //                                 getcwd(),
-        //                                 ['']);
-
         $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
         chdir($WORK_DIR);
-
-        // $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-        //                                 $notificationSalesChannel,
-        //                                 'pull bestand',
-        //                                 'post chdir',
-        //                                 getcwd(),
-        //                                 getcwd(),
-        //                                 ['']);
 
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
         chdir($path);
-        // $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-        //                                 $notificationSalesChannel,
-        //                                 'pull bestand',
-        //                                 'pre file pull',
-        //                                 $path,
-        //                                 $path,
-        //                                 ['']);
         $this->sftpController->pullFile($path,'Bestand');
-        // $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-        //                                 $notificationSalesChannel,
-        //                                 'pull bestand',
-        //                                 'post file pull',
-        //                                 $path,
-        //                                 $path,
-        //                                 ['']);
         return $this->checkBestand($context);
     }
     /**
@@ -1093,7 +1062,7 @@ class OrderInterfaceController extends AbstractController
                     }
             }
         }
-        $this->archiveFiles($path,$deleteFilesWhenFinished);
+        // $this->archiveFiles($path,$deleteFilesWhenFinished);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 

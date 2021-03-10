@@ -83,21 +83,21 @@ class SFTPController
     public function pullFile(string $localDir, string $remoteDir)
     {
         $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
-        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'pre chdir in sftpC',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
+        // $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+        //                                 $notificationSalesChannel,
+        //                                 'pull file',
+        //                                 'pre chdir in sftpC',
+        //                                 getcwd(),
+        //                                 getcwd(),
+        //                                 ['']);
         chdir($localDir);
-        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
-                                        $notificationSalesChannel,
-                                        'pull file',
-                                        'post chdir in sftpC',
-                                        getcwd(),
-                                        getcwd(),
-                                        ['']);
+        // $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+        //                                 $notificationSalesChannel,
+        //                                 'pull file',
+        //                                 'post chdir in sftpC',
+        //                                 getcwd(),
+        //                                 getcwd(),
+        //                                 ['']);
 
         // if (!function_exists("ssh2_connect")) {
         //     die('Function ssh2_connect not found, you cannot use ssh2 here');
@@ -110,11 +110,28 @@ class SFTPController
                                         getcwd(),
                                         getcwd(),
                                         ['']);
-
+try{
         if (!$connection = ssh2_connect($this->host, intval($this->port))) {
+            $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'Unable to connect',
+                                        getcwd(),
+                                        getcwd(),
+                                        ['']);
             die('Unable to connect');
         }
-
+    }
+    catch (Exception $e)
+    {
+        $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'pull file',
+                                        'Unable to connect',
+                                        $e->getMessage(),
+                                        $e->getMessage(),
+                                        ['']);
+    }
         $this->mailService->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
                                         $notificationSalesChannel,
                                         'pull file',

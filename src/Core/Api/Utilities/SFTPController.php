@@ -31,7 +31,12 @@ class SFTPController
     /** @var resource */
     private $connection;
 
-    public function __construct(string $host, string $port, string $username, string $password, string $homeDirectory, string $workDir)
+    /** @var SystemConfigService $systemConfigService */
+    private $systemConfigService;
+    /** @var MailServiceHelper $mailServiceHelper */
+    private $mailServiceHelper;
+
+    public function __construct(string $host, string $port, string $username, string $password, string $homeDirectory, string $workDir, SystemConfigService $systemConfigService, MailServiceHelper $mailServiceHelper)
     {
         $this->host = $host;
         $this->port = $port;
@@ -39,6 +44,8 @@ class SFTPController
         $this->password = $password;
         $this->homeDirectory = $homeDirectory;
         $this->workDir = $workDir;
+        $this->systemConfigService = $systemConfigService;
+        $this->mailServiceHelper = $mailServiceHelper;
     }
 
     /* Opens the connection to the $host via $port */
@@ -76,6 +83,8 @@ class SFTPController
     /* Copies a file from the remote sFTP server to local disc for evaluation */
     public function pullFile(string $localDir, string $remoteDir)
     {
+        $notificationSalesChannel = $this->systemConfigService->get('SynlabOrderInterface.config.fallbackSaleschannelNotification');
+
         chdir($localDir);
 
         if (!function_exists("ssh2_connect")) {
@@ -111,10 +120,24 @@ class SFTPController
         
         foreach ($files as $file) {
             // echo "Copying file: $file\n";
+            $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'Pull File',
+                                        'pre Fopen remote',
+                                        'ssh2.sftp://' . intval($stream) . $this->homeDirectory . $remoteDir . '/' . $file,
+                                        'ssh2.sftp://' . intval($stream) . $this->homeDirectory . $remoteDir . '/' . $file,
+                                        ['']);
             if (!$remote = @fopen('ssh2.sftp://' . intval($stream) . $this->homeDirectory . $remoteDir . '/' . $file, 'r')) {
                 throw new Exception("Unable to open remote file: $file");
                 continue;
             }
+            $this->mailserviceHelper->sendMyMail(['patrick.thimm@synlab.com'=>'patrick thimm'],
+                                        $notificationSalesChannel,
+                                        'Pull File',
+                                        'Fopen local',
+                                        $localDir . '/' . $file,
+                                        $localDir . '/' . $file,
+                                        ['']);
             if (!$local = @fopen($localDir . '/' . $file, 'w')) {
                 throw new Exception("Unable to create local file: $file\n");
                 continue;

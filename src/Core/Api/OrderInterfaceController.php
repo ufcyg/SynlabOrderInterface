@@ -465,7 +465,7 @@ class OrderInterfaceController extends AbstractController
                 }
             }
         } 
-        $this->archiveFiles($path,$deleteFilesWhenFinished);
+        $this->archiveFiles($deleteFilesWhenFinished);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
     
@@ -576,7 +576,7 @@ class OrderInterfaceController extends AbstractController
                 }
             }
         }
-        $this->archiveFiles($path,$deleteFilesWhenFinished);
+        $this->archiveFiles($deleteFilesWhenFinished);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -711,7 +711,7 @@ class OrderInterfaceController extends AbstractController
                 $this->sendErrorNotification('Error: Article base','Error reported by logistics partner, submitted article base contains errors check logfile for further informations.', [$path . $filename]);
             }
         }
-        $this->archiveFiles($path,false);
+        $this->archiveFiles(false);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
     /**
@@ -1062,7 +1062,7 @@ class OrderInterfaceController extends AbstractController
                     }
             }
         }
-        // $this->archiveFiles($path,$deleteFilesWhenFinished);
+        $this->archiveFiles($deleteFilesWhenFinished);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -1232,12 +1232,13 @@ class OrderInterfaceController extends AbstractController
         rmdir($dir);
     }
     /* Deletes recursive every file and folder in given path. So... be careful which path gets passed to this function */
-    private function archiveFiles($dir, $delete)
+    private function archiveFiles($delete)
     {
+        $dir = getcwd();
         if(!$delete)
         {
             $splitDir = explode('/', $dir);
-            $archivePath = '';
+            $archivePath = '/';
             foreach($splitDir as $dirPart)
             {
                 if($dirPart == '')
@@ -1251,26 +1252,23 @@ class OrderInterfaceController extends AbstractController
                 }
             }
 
-            $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
-            chdir($WORK_DIR);
-
-            if (!file_exists($archivePath)) {
-                mkdir($archivePath, 0777, true);
-            }
-            //copy all files from $dir to $archivePath
             $files = scandir($dir);
-            for($i = 2; $i < count($files); $i++)
+            if ($files != 0)
             {
-                $source = $dir . $files[$i]; 
-                $dest = $archivePath . $files[$i]; 
-                copy($source,$dest);
-            }
-            $this->deleteFiles($dir);
+                if (!file_exists($archivePath)) {
+                    mkdir($archivePath, 0777, true);
+                }
+                //copy all files from $dir to $archivePath
+                
+                for($i = 2; $i < count($files); $i++)
+                {
+                    $source = $dir . '/' . $files[$i]; 
+                    $dest = $archivePath . $files[$i]; 
+                    copy($source,$dest);
+                }
+            }            
         }
-        else
-        {
-            $this->deleteFiles($dir);
-        }        
+        $this->deleteFiles($dir);     
     }
 
     /* Transmission of local file to destination path on remote sFTP server */

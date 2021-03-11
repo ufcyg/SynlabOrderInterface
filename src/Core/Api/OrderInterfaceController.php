@@ -95,8 +95,6 @@ class OrderInterfaceController extends AbstractController
      */
     public function dummyRoute(Context $context)
     {
-        $var = $this->workingDirectory;
-        chdir($this->workingDirectory);
 
         return new Response('',Response::HTTP_NO_CONTENT);
     }
@@ -154,7 +152,7 @@ class OrderInterfaceController extends AbstractController
     public function submitOrders(Context $context): ?Response
     {
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($this->container->get('order.repository'), false, $context); //TODO define which orders should be transmitted
+        $entities = $this->oiUtils->getOrderEntities(false, $context); //TODO define which orders should be transmitted
         if($entities == null){
             return new Response('',Response::HTTP_NO_CONTENT);
         }
@@ -168,8 +166,10 @@ class OrderInterfaceController extends AbstractController
             {
                 $orderNumber = $order->getOrderNumber();
                 $fileContent = $this->generateFileContent($order, $orderNumber, false, $context);
-    
-                $filePath = $this->writeFile($orderNumber, $fileContent);
+                
+
+                $folderPath = $this->oiUtils->createTodaysFolderPath('Archive/SubmittedOrders', $timeStamp);
+                $filePath = $this->oiUtils->writeOrder($orderNumber, $folderPath, $fileContent, $this->companyID);
                 
                 $this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");
             }
@@ -184,8 +184,9 @@ class OrderInterfaceController extends AbstractController
                 }
                 $orderNumber = $order->getOrderNumber();
                 $fileContent = $this->generateFileContent($order, $orderNumber, true, $context);
-    
-                $filePath = $this->writeFile($orderNumber, $fileContent);
+                
+                $folderPath = $this->oiUtils->createTodaysFolderPath('Archive/SubmittedOrders', $timeStamp);
+                $filePath = $this->oiUtils->writeOrder($orderNumber, $folderPath, $fileContent, $this->companyID);
                 
                 $this->sendFile($filePath, "/WA" . "/waavis" . $orderNumber . ".csv");
             }
@@ -195,7 +196,7 @@ class OrderInterfaceController extends AbstractController
     }
 
     /* Extracts all necessary data of the order for the logistics partner throught the CSVFactory */
-    private function generateFileContent(OrderEntity $order, string $orderNumber, bool $orderCancelled, $context): string
+    public function generateFileContent(OrderEntity $order, string $orderNumber, bool $orderCancelled, $context): string
     {
         // init exportData variable, this will contain the billing/delivery address aswell as every line item of the order
         $exportData = [];
@@ -207,8 +208,8 @@ class OrderInterfaceController extends AbstractController
         $orderCustomerEntity = $order->getOrderCustomer();
         $eMailAddress = $orderCustomerEntity->getEmail();
         // deliveryaddress 
-        $exportData = $this->oiUtils->getDeliveryAddress($this->container->get('order_address.repository'), $orderID, $eMailAddress, $context);
-        $orderedProducts = $this->oiUtils->getOrderedProducts($this->container->get('order_line_item.repository'), $orderID, $context);
+        $exportData = $this->oiUtils->getDeliveryAddress($orderID, $eMailAddress, $context);
+        $orderedProducts = $this->oiUtils->getOrderedProducts($orderID, $context);
         
         $fileContent = '';
         $orderContent = '';
@@ -229,23 +230,6 @@ class OrderInterfaceController extends AbstractController
         return $fileContent;
     }
 
-    /* Writes the current order to disc with a unique name depending on the orderID */
-    private function writeFile(string $orderNumber, $fileContent): string
-    {
-        $folderPath = $this->oiUtils->createTodaysFolderPath('SubmittedOrders/');
-        $folderPath = $folderPath . '/' . $orderNumber . '/';
-
-        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
-        chdir($WORK_DIR);
-
-        if (!file_exists($folderPath)) {
-            mkdir($folderPath, 0777, true);
-        }
-        $filePath = $folderPath . $this->companyID . '-' . $orderNumber . '-order.csv';
-        file_put_contents($filePath,$fileContent);
-        return $filePath;
-    }
-
     /**
      * @Route("/api/v{version}/_action/synlab-order-interface/pullRMWA", name="api.custom.synlab_order_interface.pullRMWA", methods={"POST"})
      * @param Context $context;
@@ -254,10 +238,7 @@ class OrderInterfaceController extends AbstractController
      */
     public function pullRMWA(Context $context): ?Response
     {
-        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA');
-
-        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
-        chdir($WORK_DIR);
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA', $timeStamp);
 
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
@@ -277,7 +258,7 @@ class OrderInterfaceController extends AbstractController
         //get flag for deleting files when finished
         $deleteFilesWhenFinished = $this->systemConfigService->get('SynlabOrderInterface.config.deleteFilesAfterEvaluation');
         //create path for destination of transferred files
-        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA') . '/';
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WA', $timeStamp) . '/';
         if (file_exists($path)) { // prevent exception if the folder couldn't be created due to missing rights
             $files = scandir($path); //get all files / folders 
             for($i = 2; $i < count($files); $i++) //iterate through every file in the folder
@@ -409,7 +390,7 @@ class OrderInterfaceController extends AbstractController
                     foreach($condensedArray as $productNumber => $reportedAmount)
                     {
                         $orderID = $order->getId();
-                        $orderedProducts = $this->oiUtils->getOrderedProducts($orderLineItemRepository, $orderID, $context);
+                        $orderedProducts = $this->oiUtils->getOrderedProducts($orderID, $context);
 
                         /** @var OrderLineItemEntity $orderLineItem */
                         foreach($orderedProducts as $orderLineItem)
@@ -464,7 +445,7 @@ class OrderInterfaceController extends AbstractController
                 }
             }
         } 
-        $this->archiveFiles($deleteFilesWhenFinished);
+        $this->archiveFiles($path,$deleteFilesWhenFinished);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
     
@@ -477,10 +458,7 @@ class OrderInterfaceController extends AbstractController
      */
     public function pullRMWE(Context $context): ?Response
     {
-        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WE');
-
-        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
-        chdir($WORK_DIR);
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WE', $timeStamp);
 
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
@@ -500,7 +478,7 @@ class OrderInterfaceController extends AbstractController
         //get flag for deleting files when finished
         $deleteFilesWhenFinished = $this->systemConfigService->get('SynlabOrderInterface.config.deleteFilesAfterEvaluation');
 
-        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WE') . '/'; // get path of pulled files
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/RM_WE', $timeStamp) . '/'; // get path of pulled files
         if (file_exists($path)) { // prevent exception if the folder couldn't be created due to missing rights
             $files = scandir($path); //get all files / folders 
             for ($i = 2; $i < count($files); $i++) { // iterate through every file in the folder
@@ -575,7 +553,7 @@ class OrderInterfaceController extends AbstractController
                 }
             }
         }
-        $this->archiveFiles($deleteFilesWhenFinished);
+        $this->archiveFiles($path,$deleteFilesWhenFinished);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -678,10 +656,7 @@ class OrderInterfaceController extends AbstractController
      */
     public function pullArticleError(Context $context): ?Response
     {
-        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Artikel_Error');
-
-        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
-        chdir($WORK_DIR);
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Artikel_Error', $timeStamp);
 
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
@@ -697,7 +672,7 @@ class OrderInterfaceController extends AbstractController
      */
     public function checkArticleError(Context $context): ?Response
     {
-        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Artikel_Error') . '/';
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Artikel_Error', $timeStamp) . '/';
         if (file_exists($path)) {
             $files = scandir($path);
             if (count($files) > 2)
@@ -710,7 +685,7 @@ class OrderInterfaceController extends AbstractController
                 $this->sendErrorNotification('Error: Article base','Error reported by logistics partner, submitted article base contains errors check logfile for further informations.', [$path . $filename]);
             }
         }
-        $this->archiveFiles(false);
+        $this->archiveFiles($path,false);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
     /**
@@ -721,15 +696,11 @@ class OrderInterfaceController extends AbstractController
      */
     public function pullBestand(Context $context): ?Response
     {
-        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand');
-
-        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
-        chdir($WORK_DIR);
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand', $timeStamp);
 
         if (!file_exists($path)) {
             mkdir($path, 0777, true);
         } 
-        chdir($path);
         $this->sftpController->pullFile($path,'Bestand');
         return $this->checkBestand($context);
     }
@@ -750,7 +721,7 @@ class OrderInterfaceController extends AbstractController
         //get flag for deleting files when finished
         $deleteFilesWhenFinished = $this->systemConfigService->get('SynlabOrderInterface.config.deleteFilesAfterEvaluation');
 
-        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand') . '/';
+        $path = $this->oiUtils->createTodaysFolderPath('ReceivedStatusReply/Bestand', $timeStamp) . '/';
         if (file_exists($path)) {
             $files = scandir($path);
             for ($i = 2; $i < count($files); $i++) {
@@ -1061,7 +1032,7 @@ class OrderInterfaceController extends AbstractController
                     }
             }
         }
-        $this->archiveFiles($deleteFilesWhenFinished);
+        $this->archiveFiles($path,$deleteFilesWhenFinished);
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -1175,7 +1146,7 @@ class OrderInterfaceController extends AbstractController
     public function modifyOrdersState(Context $context)
     {//reopen,process,complete,cancel
         /** @var EntitySearchResult $entities */
-        $entities = $this->oiUtils->getOrderEntities($this->container->get('order.repository'), false, $context);
+        $entities = $this->oiUtils->getOrderEntities(false, $context);
 
         if(count($entities) === 0){
             return;
@@ -1232,26 +1203,12 @@ class OrderInterfaceController extends AbstractController
         rmdir($dir);
     }
     /* Deletes recursive every file and folder in given path. So... be careful which path gets passed to this function */
-    private function archiveFiles($delete)
+    private function archiveFiles($dir,$delete)
     {
-        $dir = getcwd();
         if(!$delete)
         {
-            $splitDir = explode('/', $dir);
-            $archivePath = '/';
-            foreach($splitDir as $dirPart)
-            {
-                if($dirPart == '')
-                {
-                    continue;
-                }
-                $archivePath = $archivePath . $dirPart . '/' ;
-                if($dirPart == 'InterfaceData')
-                {
-                    $archivePath = $archivePath . 'Archive' . '/';
-                }
-            }
-
+            
+            $archivePath = $this->workingDirectory . "Archive";
             $files = scandir($dir);
             if ($files != 0)
             {

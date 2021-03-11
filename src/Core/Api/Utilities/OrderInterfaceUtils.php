@@ -103,6 +103,20 @@ class OrderInterfaceUtils
         return $this->folderRoot . $path . '/' . $timeStamp;
     }
 
+    /* Writes the current order to disc with a unique name depending on the orderID */
+    public function writeOrder(string $orderNumber,string $folderPath, string $fileContent, string $companyID): string
+    {
+        $folderPath = $folderPath . '/' . $orderNumber . '/';
+
+        if (!file_exists($folderPath)) {
+            mkdir($folderPath, 0777, true);
+        }
+
+        $filePath = $folderPath . $companyID . '-' . $orderNumber . '-order.csv';
+        file_put_contents($filePath,$fileContent);
+        return $filePath;
+    }
+
     /* Returns a search result containing all products in the products repository*/
     public function getAllProducts(Context $context): EntitySearchResult
     {
@@ -159,8 +173,9 @@ class OrderInterfaceUtils
     }
 
     /* Returns an array with all saved order line items associated to the given orderID */
-    public function getOrderedProducts(EntityRepositoryInterface $lineItemsRepository, string $orderID, Context $context): array
+    public function getOrderedProducts(string $orderID, Context $context): array
     {
+        $lineItemsRepository = $this->container->get('order_line_item.repository');
         /** @var Criteria $criteria */
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('orderId', $orderID));
@@ -179,8 +194,9 @@ class OrderInterfaceUtils
     }
 
     /* Returns the billing as well as the shipping address in a single array, if the 2nd half is empty the first 6 entries are used as billing AND shipping address */
-    public function getDeliveryAddress(EntityRepositoryInterface $orderDeliveryAddressRepository, string $orderID, string $eMailAddress, Context $context): array
+    public function getDeliveryAddress(string $orderID, string $eMailAddress, Context $context): array
     {
+        $orderDeliveryAddressRepository = $this->container->get('order_address.repository');
         /** @var Criteria $criteria */
         $criteria = new Criteria(); //create criteria
         $criteria->addFilter(new EqualsFilter('orderId', $orderID)); //add filter
@@ -225,7 +241,7 @@ class OrderInterfaceUtils
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('id', $countryID));
         /** @var CountryEntity $countryEntity */
-        $countryEntity = $this->repositoryContainer->getCountryRepository()->search($criteria,Context::createDefaultContext())->first();
+        $countryEntity = $this->container->get('country.repository')->search($criteria,Context::createDefaultContext())->first();
         return $countryEntity->getIso();
     }
 
@@ -282,4 +298,6 @@ class OrderInterfaceUtils
         
         return count($searchResult) != 0 ? true : false;
     }
+
+    
 }

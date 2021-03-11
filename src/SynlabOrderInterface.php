@@ -37,26 +37,13 @@ class SynlabOrderInterface extends Plugin
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive', 0777, true);
         }
-
-        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/Articlebase')) {
-            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Articlebase', 0777, true);
-        }
+        
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/Articlebase')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/Articlebase', 0777, true);
         }
 
-        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/SubmittedOrders')) {
-            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/SubmittedOrders', 0777, true);
-        }
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/SubmittedOrders')) {
             mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/SubmittedOrders', 0777, true);
-        }
-
-        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply')) {
-            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply', 0777, true);
-        }
-        if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/ReceivedStatusReply')) {
-            mkdir('../custom/plugins/SynlabOrderInterface/InterfaceData/Archive/ReceivedStatusReply', 0777, true);
         }
 
         if (!file_exists('../custom/plugins/SynlabOrderInterface/InterfaceData/ReceivedStatusReply')) {

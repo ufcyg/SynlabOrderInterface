@@ -14,6 +14,10 @@
         </service>
 
         <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" public="true">    
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />  
+            <call method="setContainer">
+                <argument type="service" id="service_container" />
+            </call>
         </service>
 
         <service id="SynlabOrderInterface\Core\Api\Utilities\SFTPController" public="true">    
@@ -29,12 +33,6 @@
 
         <service id="SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils" public="true">      
             <argument type="service" id="Shopware\Core\Checkout\Order\SalesChannel\OrderService" />
-        </service>
-
-        <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" public="true">
-            <call method="setContainer">
-                <argument type="service" id="service_container" />
-            </call>
         </service>
 
         <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController" public="true">

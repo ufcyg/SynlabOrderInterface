@@ -22,35 +22,22 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\RangeFilter;
 use Shopware\Core\System\Country\CountryEntity;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SynlabOrderInterface\Core\Content\StockQS\OrderInterfaceStockQSEntity;
 
 class OrderInterfaceUtils
 {
+    /** @var SystemConfigService $systemConfigService */
+    private $systemConfigService;
     /** @var string $folderRoot */
     private $folderRoot;
-    /** @var string $todaysFolderPath */
-    private $todaysFolderPath;
     /** @var ContainerInterface $container */
     protected $container;
     
-    public function __construct()
+    public function __construct(SystemConfigService $systemConfigService)
     {
-        $splitDir = explode('/', getcwd());
-            $WORK_DIR = '/';
-            foreach($splitDir as $dirPart)
-            {
-                if($dirPart == '')
-                {
-                    continue;
-                }
-                $WORK_DIR = $WORK_DIR . $dirPart . '/' ;
-                if($dirPart == 'public')
-                {
-                    $WORK_DIR = $WORK_DIR . 'custom/plugins/SynlabOrderInterface/InterfaceData/';
-                }
-            }
-        $this->folderRoot = $WORK_DIR;
-        $this->todaysFolderPath = '';
+        $this->systemConfigService = $systemConfigService;
+        $this->folderRoot = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
     }
     
 
@@ -108,7 +95,7 @@ class OrderInterfaceUtils
     }
 
     /* Creates a path according to the input $path and the preset folderRoot combined with todays date */
-    public function createTodaysFolderPath($path):string
+    public function createTodaysFolderPath($path, &$timeStamp):string
     {
         $timeStamp = new DateTime();
         $timeStamp = $timeStamp->format('d-m-Y');
@@ -117,8 +104,9 @@ class OrderInterfaceUtils
     }
 
     /* Returns a search result containing all products in the products repository*/
-    public function getAllProducts(EntityRepositoryInterface $productsRepository, Context $context): EntitySearchResult
+    public function getAllProducts(Context $context): EntitySearchResult
     {
+        $productsRepository = $this->container->get('product.repository');
         $criteria = new Criteria();
         /** @var EntitySearchResult */
         return $productsRepository->search($criteria, $context);
@@ -143,8 +131,9 @@ class OrderInterfaceUtils
     }
 
     /* Depending on the flag $applyFilter all orders will be returned if false, a filtration by date will happen if true*/
-    public function getOrderEntities(EntityRepositoryInterface $orderRepository, bool $applyFilter, Context $context)
+    public function getOrderEntities(bool $applyFilter, Context $context)
     {
+        $orderRepository = $this->container->get('order.repository');
         $criteria = $applyFilter ? $this->addCriteriaFilterDate(new Criteria()) : new Criteria();
 
         /** @var EntitySearchResult $entities */

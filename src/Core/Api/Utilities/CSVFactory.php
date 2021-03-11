@@ -188,7 +188,7 @@ class CSVFactory
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('unitId', $unitID));
         /** @var EntityRepositoryInterface $unitTranslationRepository */
-        $unitTranslationRepository = $this->repositoryContainer->getUnitTranslation();
+        $unitTranslationRepository = $this->container->get('unit_translation.repository');
         /** @var EntitySearchResult $unitTranslationSearchResult */
         $unitTranslationSearchResult = $unitTranslationRepository->search($criteria,Context::createDefaultContext());
         /** @var UnitTranslationEntity $unitTranslation */
@@ -212,7 +212,7 @@ class CSVFactory
     private function getManufacturerName(ProductEntity $product):string
     {
         $manufacturerID = $product->getManufacturerId();
-        $manufacturerTranslationRepository = $this->repositoryContainer->getManufacturerTranslation();
+        $manufacturerTranslationRepository = $this->container->get('product_manufacturer_translation.repository');
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('productManufacturerId',$manufacturerID));
         $manufacturer = $manufacturerTranslationRepository->search($criteria,$this->currentContext);
@@ -227,7 +227,7 @@ class CSVFactory
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('productId',$productID));
         /** @var EntityRepositoryInterface $productTranslationRepository */
-        $productTranslationRepository = $this->repositoryContainer->getProductTranslation();
+        $productTranslationRepository = $this->container->get('product_translation.repository');
 
         $entities = $productTranslationRepository->search($criteria,$this->currentContext);
         $context = $this->currentContext;

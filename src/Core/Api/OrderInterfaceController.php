@@ -38,8 +38,6 @@ class OrderInterfaceController extends AbstractController
 {
     /** @var SFTPController $sftpController */
     private $sftpController;
-    // /** @var string */
-    // private $todaysFolderPath;
     /** @var CSVFactory $csvFactory */
     private $csvFactory;
     /** @var SystemConfigService $systemConfigService */
@@ -56,6 +54,9 @@ class OrderInterfaceController extends AbstractController
     private $senderName;
     /** @var ASControllingReportController $controllingReportController */
     private $controllingReportController;
+    /** @var string $workingDirectory */
+    private $workingDirectory;
+
     public function __construct(SystemConfigService $systemConfigService,
                                 CSVFactory $csvFactory,
                                 OrderInterfaceUtils $oiUtils,
@@ -75,8 +76,15 @@ class OrderInterfaceController extends AbstractController
 
         $this->controllingReportController = $controllingReportController;
 
-        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
+        $this->workingDirectory = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
+
         $this->sftpController = $sftpController;
+    }
+
+    /* Transmission of local file to destination path on remote sFTP server */
+    private function sendFile(string $filePath, string $destinationPath)
+    {
+        $this->sftpController->pushFile($filePath, $destinationPath);
     }
 
     /**
@@ -87,7 +95,9 @@ class OrderInterfaceController extends AbstractController
      */
     public function dummyRoute(Context $context)
     {
-        
+        $var = $this->workingDirectory;
+        chdir($this->workingDirectory);
+
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 
@@ -115,25 +125,22 @@ class OrderInterfaceController extends AbstractController
     public function submitArticlebase(Context $context): ?Response
     { 
         /** @var EntitySearchResult $products */
-        $products = $this->oiUtils->getAllProducts($this->container->get('product.repository'), $context);
+        $products = $this->oiUtils->getAllProducts($context);
 
         $csvString = '';
         foreach ($products as $product)
         {
             $csvString = $this->csvFactory->generateArticlebase($csvString, $product, $context);
         }
-        $articlebasePath = $this->oiUtils->createTodaysFolderPath('Articlebase');
-        $splitPath = explode('/',$articlebasePath);
-
-        $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
-        chdir($WORK_DIR);
+        $articlebasePath = $this->oiUtils->createTodaysFolderPath('Archive/Articlebase', $timeStamp);
 
         if (!file_exists($articlebasePath)) {
             mkdir($articlebasePath, 0777, true);
         }   
-        $filename = $articlebasePath . '/' . $this->companyID . '.' . 'Artikelstamm-' . $splitPath[6] . '.csv';
+        $filename = $articlebasePath . '/' . $this->companyID . '.' . 'Artikelstamm-' . $timeStamp . '.csv';
         file_put_contents($filename, $csvString);
 
+        
         $this->sendFile($filename, "/Artikel" . "/artikelstamm" . $this->oiUtils->createShortDateFromString('now') . ".csv");
         return new Response('',Response::HTTP_NO_CONTENT);
     }
@@ -1262,12 +1269,6 @@ class OrderInterfaceController extends AbstractController
             }            
         }
         $this->deleteFiles($dir);     
-    }
-
-    /* Transmission of local file to destination path on remote sFTP server */
-    private function sendFile(string $filePath, string $destinationPath)
-    {
-        $this->sftpController->pushFile($filePath, $destinationPath);
     }
 
     /**

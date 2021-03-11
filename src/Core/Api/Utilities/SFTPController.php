@@ -69,7 +69,6 @@ class SFTPController
     /* Writes local file on remote sFTP server */
     public function pushFile(string $originPath, string $destinationPath)
     {
-        chdir($this->workDir);
         if ($this->openConnection()) {//connected
             if ($this->authConnection()) {//authenticated
                 $sftp = ssh2_sftp($this->connection);

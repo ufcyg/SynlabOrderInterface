@@ -87,7 +87,7 @@ class OrderInterfaceController extends AbstractController
      */
     public function dummyRoute(Context $context)
     {
-        $this->oiUtils->containerTest();
+        
         return new Response('',Response::HTTP_NO_CONTENT);
     }
 

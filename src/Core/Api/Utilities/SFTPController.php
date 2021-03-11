@@ -14,6 +14,8 @@ Establishes a secure file transfer protocoll connection to the server defined in
 */
 class SFTPController
 {
+    /** @var SystemConfigService $systemConfigService */
+    private $systemConfigService;
     //server data
     /** @var string $ipAddress */
     private $host;
@@ -31,14 +33,20 @@ class SFTPController
     /** @var resource */
     private $connection;
 
-    public function __construct(string $host, string $port, string $username, string $password, string $homeDirectory, string $workDir)
+    public function __construct(SystemConfigService $systemConfigService)
     {
-        $this->host = $host;
-        $this->port = $port;
-        $this->username = $username;
-        $this->password = $password;
-        $this->homeDirectory = $homeDirectory;
-        $this->workDir = $workDir;
+        $this->systemConfigService = $systemConfigService;
+        $this->host = $this->systemConfigService->get('SynlabOrderInterface.config.ipAddress');
+        $this->port = $this->systemConfigService->get('SynlabOrderInterface.config.port');
+        $this->username = $this->systemConfigService->get('SynlabOrderInterface.config.ftpUserName');
+        $this->password = $this->systemConfigService->get('SynlabOrderInterface.config.ftpPassword');
+        $this->homeDirectory = $this->systemConfigService->get('SynlabOrderInterface.config.homeDirectory');
+        $this->workDir = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
+    }
+
+    public function init()
+    {
+        
     }
 
     /* Opens the connection to the $host via $port */

@@ -5,6 +5,19 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
+        <service id="SynlabOrderInterface\Core\Api\Utilities\CSVFactory" public="true">      
+            <argument id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" type="service"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container" />
+            </call>
+        </service>
+
+        <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" public="true">    
+        </service>
+
+        <service id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" public="true">    
+        </service>
+
         <service id="SynlabOrderInterface\Core\Content\CancelledConfirmation\OrderInterfaceCancelConfirmationDefinition">
             <tag name="shopware.entity.definition" entity="as_cancelled_confirmation" />
         </service>
@@ -32,7 +45,7 @@
 
         <service id="SynlabOrderInterface\Core\Api\OrderInterfaceController" public="true">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService" />
-            <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer" />
+            <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\CSVFactory" />
             <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils" />
             <argument type="service" id="SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils" />
             <argument type="service" id="ASMailService\Core\MailServiceHelper" />

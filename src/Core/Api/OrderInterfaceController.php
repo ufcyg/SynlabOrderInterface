@@ -20,7 +20,6 @@ use Shopware\Core\System\SystemConfig\SystemConfigService;
 use SynlabOrderInterface\Core\Api\Utilities\CSVFactory;
 use SynlabOrderInterface\Core\Api\Utilities\SFTPController;
 use SynlabOrderInterface\Core\Api\Utilities\OIOrderServiceUtils;
-use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceRepositoryContainer;
 use SynlabOrderInterface\Core\Api\Utilities\OrderInterfaceUtils;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -45,8 +44,6 @@ class OrderInterfaceController extends AbstractController
     private $csvFactory;
     /** @var SystemConfigService $systemConfigService */
     private $systemConfigService;
-    /** @var OrderInterfaceRepositoryContainer $repositoryContainer */
-    private $repositoryContainer;
     /** @var OrderInterfaceUtils $oiUtils */
     private $oiUtils;
     /** @var string $companyID */
@@ -60,31 +57,26 @@ class OrderInterfaceController extends AbstractController
     /** @var ASControllingReportController $controllingReportController */
     private $controllingReportController;
     public function __construct(SystemConfigService $systemConfigService,
-                                OrderInterfaceRepositoryContainer $repositoryContainer,
+                                CSVFactory $csvFactory,
                                 OrderInterfaceUtils $oiUtils,
                                 OIOrderServiceUtils $oiOrderServiceUtils,
                                 MailServiceHelper $mailserviceHelper,
-                                ASControllingReportController $controllingReportController)
+                                ASControllingReportController $controllingReportController,
+                                SFTPController $sftpController)
     {
         $this->systemConfigService = $systemConfigService;
-        $this->repositoryContainer = $repositoryContainer;
+        $this->csvFactory = $csvFactory;
         $this->oiUtils = $oiUtils;
-        // $oiUtils->setContainer($this->container);
+        $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
         $this->oiOrderServiceUtils = $oiOrderServiceUtils;
+
         $this->mailserviceHelper = $mailserviceHelper;
         $this->senderName = 'Order Interface';
+
         $this->controllingReportController = $controllingReportController;
 
-        $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
-        $this->csvFactory = new CSVFactory($this->companyID, $this->repositoryContainer, $this->oiUtils);
-        $ipAddress = $this->systemConfigService->get('SynlabOrderInterface.config.ipAddress');
-        $port = $this->systemConfigService->get('SynlabOrderInterface.config.port');
-        $username = $this->systemConfigService->get('SynlabOrderInterface.config.ftpUserName');
-        $password = $this->systemConfigService->get('SynlabOrderInterface.config.ftpPassword');
-        $homeDirectory = $this->systemConfigService->get('SynlabOrderInterface.config.homeDirectory');
-
         $WORK_DIR = $this->systemConfigService->get('SynlabOrderInterface.config.workingDirectory');
-        $this->sftpController = new SFTPController($ipAddress, $port, $username, $password, $homeDirectory,$WORK_DIR,$systemConfigService,$mailserviceHelper);
+        $this->sftpController = $sftpController;
     }
 
     /**
@@ -365,7 +357,7 @@ class OrderInterfaceController extends AbstractController
                 }
                 else if ($filenameContents[1] === 'VLE') // packages loaded, we will have the tracking numbers and add them to the orderdelivery repository datafield
                 {
-                    /** @var EntityRepositoryInterface $orderRepositoryContainer */
+                    /** @var EntityRepositoryInterface $orderDeliveryRepository */
                     $orderDeliveryRepository = $this->container->get('order_delivery.repository');
                     /** @var EntityRepositoryInterface $orderLineItemRepository */
                     $orderLineItemRepository = $this->container->get('order_line_item.repository');
@@ -1215,6 +1207,7 @@ class OrderInterfaceController extends AbstractController
     /* Deletes recursive every file and folder in given path. So... be careful which path gets passed to this function */
     private function deleteFiles($dir)
     {
+        return;
         $it = new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS);
         $files = new RecursiveIteratorIterator($it,
                 RecursiveIteratorIterator::CHILD_FIRST);

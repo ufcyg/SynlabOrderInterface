@@ -2,6 +2,7 @@
 
 namespace SynlabOrderInterface\Core\Api\Utilities;
 
+use Psr\Container\ContainerInterface;
 use Shopware\Core\Checkout\Order\Aggregate\OrderLineItem\OrderLineItemEntity;
 use Shopware\Core\Content\Product\Aggregate\ProductTranslation\ProductTranslationEntity;
 use Shopware\Core\Content\Product\ProductEntity;
@@ -10,6 +11,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepositoryInterface;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\EntitySearchResult;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Core\System\Unit\Aggregate\UnitTranslation\UnitTranslationEntity;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 
@@ -20,22 +22,37 @@ Class solemny for generating large strings according to the documentation of log
 */
 class CSVFactory
 {
+    /** @var SystemConfigService $systemConfigService */
+    private $systemConfigService;
     /** @var PropertyAccess $propertyAccessor */
     private $properyAccessor;
     /** @var string $companyID */
     private $companyID;
-    /** @var OrderInterfaceRepositoryContainer $repositoryContainer */
-    private $repositoryContainer;
     /** @var Context $currentContext */
     private $currentContext;
     /** @var OrderInterfaceUtils $oiUtils */
     private $oiUtils;
-    public function __construct(string $companyID, OrderInterfaceRepositoryContainer $repositoryContainer, OrderInterfaceUtils $oiUtils)
+    /** @var ContainerInterface $container */
+    protected $container;
+    public function __construct(SystemConfigService $systemConfigService,
+                                OrderInterfaceUtils $oiUtils)
     {
         $this->properyAccessor = PropertyAccess::createPropertyAccessor();
-        $this->companyID = $companyID;
-        $this->repositoryContainer = $repositoryContainer;
+        $this->systemConfigService = $systemConfigService;
+        $this->companyID = $this->systemConfigService->get('SynlabOrderInterface.config.logisticsCustomerID');
         $this->oiUtils = $oiUtils;
+    }
+
+    /**
+     * @internal
+     * @required
+     */
+    public function setContainer(ContainerInterface $container): ?ContainerInterface
+    {
+        $previous = $this->container;
+        $this->container = $container;
+
+        return $previous;
     }
 
     public function generateArticlebase(string $csvString, ProductEntity $product, Context $context): string

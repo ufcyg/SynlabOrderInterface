@@ -30,12 +30,10 @@ class OrderInterfaceUtils
     private $folderRoot;
     /** @var string $todaysFolderPath */
     private $todaysFolderPath;
-    /** @var OrderInterfaceRepositoryContainer $repositoryContainer*/
-    private $repositoryContainer;
     /** @var ContainerInterface $container */
     protected $container;
     
-    public function __construct(OrderInterfaceRepositoryContainer $repositoryContainer)
+    public function __construct()
     {
         $splitDir = explode('/', getcwd());
             $WORK_DIR = '/';
@@ -52,9 +50,7 @@ class OrderInterfaceUtils
                 }
             }
         $this->folderRoot = $WORK_DIR;
-        // $this->folderRoot = '../custom/plugins/SynlabOrderInterface/InterfaceData/';
         $this->todaysFolderPath = '';
-        $this->repositoryContainer = $repositoryContainer;
     }
     
 
